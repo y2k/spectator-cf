@@ -1,4 +1,7 @@
 (test
  (name test_spectator)
  (modes js)
- (libraries spectator))
+ (js_of_ocaml
+  (flags
+   (:standard --enable effects)))
+ (libraries lib))

@@ -1,5 +1,4 @@
-open Js_of_ocaml
-open Promise.Syntax
+open Effect_handlers
 
 module Handler = struct
   module StringMap = Map.Make (String)
@@ -36,42 +35,35 @@ type message = { text : string; from : message_from }
 
 type message_upd = { message : message } [@@deriving yojson { strict = false }]
 
-let handler = Handler.handle_command ()
-
 let send_to_user user_id message =
-  let tg_token = Js.Unsafe.global ##. TG_TOKEN_ in
-  let* response =
-    Js.Unsafe.fun_call Js.Unsafe.global##.fetch
-      [|
-        Js.Unsafe.inject
-          ("https://api.telegram.org/bot" ^ tg_token ^ "/sendMessage");
-        `Assoc
-          [
-            ( "body",
-              `String
-                (`Assoc
-                   [ ("chat_id", `String user_id); ("text", `String message) ]
-                |> Yojson.pretty_to_string) );
-            ("method", `String "POST");
-            ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
-          ]
-        |> Yojson.to_string |> Js.string |> Json.unsafe_input;
-      |]
+  let url = "https://api.telegram.org/bot~TG_TOKEN~/sendMessage" in
+  let props =
+    `Assoc
+      [
+        ( "body",
+          `String
+            (`Assoc [ ("chat_id", `String user_id); ("text", `String message) ]
+            |> Yojson.pretty_to_string) );
+        ("method", `String "POST");
+        ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
+      ]
   in
-  Promise.return response
+  Effect.perform (Fetch (url, props))
+
+let statefull_handler = Handler.handle_command ()
+
+let handle_command text =
+  let json = text |> Yojson.Safe.from_string in
+  json |> message_upd_of_yojson
+  |> Result.map (fun x ->
+         statefull_handler (string_of_int x.message.from.id) x.message.text
+         |> send_to_user (string_of_int x.message.from.id))
+  |> Result.fold ~ok:Fun.id ~error:(fun _e ->
+         failwith "Unknown telegram command not supported")
 
 let handle_fetch request =
+  let open Promise.Syntax in
   let* text = request##text in
-  let json = text |> Yojson.Safe.from_string in
-  (* json |> Yojson.Safe.pretty_to_string |> print_endline; *)
-  (* json |> Yojson.Safe.show |> print_endline; *)
-  let msg_promise =
-    json |> message_upd_of_yojson
-    |> Result.map (fun x ->
-           handler (string_of_int x.message.from.id) x.message.text
-           |> send_to_user (string_of_int x.message.from.id))
-  in
-  let* _r =
-    match msg_promise with Ok x -> x | Error _e -> Promise.return Ojs.null
-  in
-  Promise.return ()
+  let msg_promise = decorate_with_fetch_effect handle_command text in
+  let+ a = msg_promise () in
+  match a with Ok _x -> () | Error _e -> ()
