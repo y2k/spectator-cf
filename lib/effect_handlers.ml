@@ -32,7 +32,7 @@ let decorate_with_fetch_effect f arg =
                   let thunk_action () =
                     Js.Unsafe.fun_call Js.Unsafe.global##.fetch
                       [|
-                        Js.Unsafe.inject (fix_url url |> trace "URL");
+                        Js.Unsafe.inject (fix_url url);
                         props |> Yojson.Safe.to_string |> Js.string
                         |> Json.unsafe_input;
                       |]

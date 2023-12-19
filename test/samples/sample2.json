@@ -1,0 +1,33 @@
+{
+    "update_id": 569125638,
+    "message": {
+        "message_id": 5596,
+        "from": {
+            "id": 241854720,
+            "is_bot": false,
+            "first_name": "Igor",
+            "username": "angmarr",
+            "language_code": "en"
+        },
+        "chat": {
+            "id": 241854720,
+            "first_name": "Igor",
+            "username": "angmarr",
+            "type": "private"
+        },
+        "date": 1703017762,
+        "text": "/add https://g.com/",
+        "entities": [
+            {
+                "offset": 0,
+                "length": 4,
+                "type": "bot_command"
+            },
+            {
+                "offset": 5,
+                "length": 14,
+                "type": "url"
+            }
+        ]
+    }
+}
