@@ -6,6 +6,12 @@ let trace prefix x =
   |> ignore;
   x
 
+let trace_ex prefix f x =
+  Js.Unsafe.meth_call Js.Unsafe.global##.console "log"
+    [| Js.Unsafe.inject (prefix ^ ":"); Js.Unsafe.inject (f x) |]
+  |> ignore;
+  x
+
 module Thunk = struct
   type 'a t = unit -> ('a, string) Result.t Promise.t
 end

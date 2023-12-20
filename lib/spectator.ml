@@ -1,5 +1,7 @@
 open Effect_handlers
 
+(* open DbQuery *)
+
 module Handler = struct
   module StringMap = Map.Make (String)
 
@@ -68,9 +70,51 @@ let handle_command text =
   |> Result.fold ~ok:Fun.id ~error:(fun _e ->
          failwith "Unknown telegram command not supported")
 
-let handle_fetch request =
+let _handle_fetch request =
   let open Promise.Syntax in
   let* text = request##text in
   let msg_promise = decorate_with_fetch_effect handle_command text in
   let+ a = msg_promise () in
   match a with Ok _x -> () | Error _e -> ()
+
+module DbQuery = struct
+  type new_subscription = { user_id : string; url : string } [@@deriving yojson]
+  type _ Effect.t += Sql : Yojson.Safe.t -> Yojson.Safe.t Thunk.t Effect.t
+
+  let rec to_sql = function
+    | `String x -> x
+    | `List [ `String x; a; b ] ->
+        to_sql a ^ " " ^ String.uppercase_ascii x ^ " " ^ to_sql b
+    | `Assoc _xs -> (
+        _xs
+        |> List.map (fun (k, v) ->
+               Printf.sprintf "%s %s" (String.uppercase_ascii k) (to_sql v))
+        |> function
+        | x :: xs -> List.fold_left (Printf.sprintf "%s %s") x xs
+        | xs -> List.fold_left (Printf.sprintf "%s %s") "" xs)
+    | x -> failwith @@ "Node not supported: " ^ Yojson.Safe.pretty_to_string x
+end
+
+let handle_fetch _request env =
+  let open Js_of_ocaml in
+  (* let sql =
+     `Assoc
+       [
+         ("select", `String "*");
+         ("from", `String "new_subscriptions");
+         ("where", `List [ `String "="; `String "user_id"; `String "?" ]);
+       ]
+     |> trace_ex "JSQL" Yojson.Safe.pretty_to_string
+     |> DbQuery.to_sql |> trace "SQL" *)
+  (* let sql = "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)" in
+     let open Promise.Syntax in
+     let* result = ((env ##. DB##prepare sql)##bind "u1" "c2")##run in
+     trace "Result" result |> ignore; *)
+  let sql = "SELECT * FROM new_subscriptions WHERE user_id = ?" in
+  let open Promise.Syntax in
+  let* result = ((env ##. DB##prepare sql)##bind "u1")##run in
+  trace "Result"
+    (result##.results |> Json.output |> Js.to_string |> Yojson.Safe.from_string
+   |> Yojson.Safe.pretty_to_string)
+  |> ignore;
+  Promise.return ()
