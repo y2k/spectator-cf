@@ -1,0 +1,13 @@
+name = "spectator"
+main = "worker.index.js"
+compatibility_date = "2023-10-30"
+node_compat = true
+
+[build]
+command = "cd .. && dune build"
+watch_dir = ["../bin", "../lib"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "SPECTATOR_DB"
+database_id = "e5d9a697-5a19-40e3-ad7d-be825a175acc"

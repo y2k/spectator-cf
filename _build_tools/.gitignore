@@ -170,7 +170,3 @@ dist
 
 .dev.vars
 .wrangler/
-
-# custom files
-
-update_local_webhook.sh
