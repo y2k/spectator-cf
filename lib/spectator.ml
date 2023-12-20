@@ -5,27 +5,34 @@ module Handler = struct
 
   type state = { subs : string list StringMap.t }
 
-  let handle_command () =
-    let state = ref { subs = StringMap.empty } in
-    fun (user_id : string) (msg : string) ->
-      match String.split_on_char ' ' msg with
-      | [ "/ls" ] ->
-          let subs =
-            !state.subs |> StringMap.find_opt user_id
-            |> Option.value ~default:[]
-          in
+  let empty_state = { subs = StringMap.empty }
+
+  let handle_command' (state : state) (user_id : string) (msg : string) =
+    match String.split_on_char ' ' msg with
+    | [ "/ls" ] ->
+        let subs =
+          state.subs |> StringMap.find_opt user_id |> Option.value ~default:[]
+        in
+        ( state,
           if subs = [] then "No subscriptions"
           else
             subs |> List.fold_left (Printf.sprintf "%s\n- %s") "Subscriptions:"
-      | [ "/add"; url ] ->
-          let subs =
-            !state.subs |> StringMap.find_opt user_id
-            |> Option.value ~default:[]
-          in
-          let subs = url :: subs in
-          state := { subs = StringMap.add user_id subs !state.subs };
-          "Subscription added"
-      | _ -> failwith "???"
+        )
+    | [ "/add"; url ] ->
+        let subs =
+          state.subs |> StringMap.find_opt user_id |> Option.value ~default:[]
+        in
+        let subs = url :: subs in
+        let state = { subs = StringMap.add user_id subs state.subs } in
+        (state, "Subscription added")
+    | _ -> failwith "???"
+
+  let handle_command () =
+    let state = ref empty_state in
+    fun (user_id : string) (msg : string) ->
+      let s, result = handle_command' !state user_id msg in
+      state := s;
+      result
 end
 
 type message_from = { id : int } [@@deriving yojson { strict = false }]

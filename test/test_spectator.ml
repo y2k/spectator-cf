@@ -48,8 +48,8 @@ let assert_ input_name =
     if expected <> !actual then failwith !actual)
   else write_sample expected_filename !actual
 
+let () = assert_ "sample1.json"
+
 let () =
   assert_ "sample2.json";
   assert_ "sample3.json"
-
-let () = assert_ "sample1.json"
