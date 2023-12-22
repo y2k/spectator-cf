@@ -110,6 +110,15 @@ let handle_fetch _request env =
      let open Promise.Syntax in
      let* result = ((env ##. DB##prepare sql)##bind "u1" "c2")##run in
      trace "Result" result |> ignore; *)
+  (*  *)
+  let _jsql =
+    `Assoc
+      [
+        ("query", `String "SELECT * FROM new_subscriptions WHERE user_id = ?");
+        ("type", `String "raw");
+        ("params", `Assoc []);
+      ]
+  in
   let sql = "SELECT * FROM new_subscriptions WHERE user_id = ?" in
   let open Promise.Syntax in
   let* result = ((env ##. DB##prepare sql)##bind "u1")##run in
