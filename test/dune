@@ -4,7 +4,9 @@
  (js_of_ocaml
   (flags
    (:standard --enable effects)))
- (libraries lib))
+ (libraries lib)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (env
  (dev
