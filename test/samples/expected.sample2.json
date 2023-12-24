@@ -2,7 +2,7 @@
   {
     "url": "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
     "props": {
-      "body": "{ \"chat_id\": \"241854720\", \"text\": \"Subscription added\" }",
+      "body": "{\"chat_id\":\"241854720\",\"text\":\"Subscription added\"}",
       "method": "POST",
       "headers": { "Content-Type": "application/json" }
     }

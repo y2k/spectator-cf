@@ -1,5 +1,5 @@
 (test
- (name test_spectator)
+ (name tests)
  (modes js)
  (js_of_ocaml
   (flags
