@@ -5,3 +5,8 @@
   (flags
    (:standard --enable effects)))
  (libraries lib))
+
+(env
+ (dev
+  (flags
+   (:standard -w -38 -w -26 -w -32))))
