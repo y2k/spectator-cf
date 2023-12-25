@@ -1,25 +1,4 @@
-module Io = struct
-  type 'a t = { f : ('a -> unit) -> unit }
-
-  let map (f : 'a -> 'b) (ma : 'a t) : 'b t =
-    { f = (fun callback -> ma.f (fun x -> callback (f x))) }
-
-  let pure x = { f = (fun callback -> callback x) }
-
-  let combine2 ma mb =
-    { f = (fun callback -> ma.f (fun a -> mb.f (fun b -> callback (a, b)))) }
-
-  let ignore ma = { f = (fun callback -> ma.f (fun _ -> callback ())) }
-
-  module Syntax = struct
-    let ( let+ ) ma f = map f ma
-  end
-end
-
-type _ Effect.t +=
-  | Fetch : (string * Yojson.Safe.t) -> Yojson.Safe.t Io.t Effect.t
-  | QueryDbFx : (string * string list) -> Yojson.Safe.t list Io.t Effect.t
-  | ExecuteDbFx : (string * string list) -> unit Io.t Effect.t
+open Effects
 
 let send_telegram_mesage user_id response_msg =
   Effect.perform
@@ -163,9 +142,6 @@ module RealEffectHandlers = struct
                                 |> Json.unsafe_input;
                               |]
                             |> Promise.then_ ~fulfilled:(fun x -> x##text)
-                            |> Promise.then_ ~fulfilled:(fun x ->
-                                   x |> Yojson.Safe.from_string
-                                   |> Promise.return)
                             |> Promise.then_ ~fulfilled:(fun x ->
                                    with_effect env callback x;
                                    Promise.return ())

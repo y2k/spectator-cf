@@ -1,3 +1,5 @@
+open Lib.Effects
+
 module Intergration_tests = struct
   let create_sample_path filename = "../../../test/samples/" ^ filename
 
@@ -94,7 +96,7 @@ module IoSample2 = struct
                                     [ ("url", `String url); ("props", req) ]
                                   :: !effects_log;
                                 with_effect effects_log query_stage callback
-                                  `Null)
+                                  (Ok ""))
                               10.0
                             |> ignore);
                       })
