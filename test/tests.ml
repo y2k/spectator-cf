@@ -26,6 +26,11 @@ module Intergration_tests = struct
     else write_sample sample_file_name actual
 end
 
+let () =
+  let xml = Intergration_tests.read_sample "rss.xml" in
+  let actual = Lib.Subscription_creator.is_atom xml in
+  if not actual then failwith "Not RSS"
+
 module IoSample2 = struct
   open Effect.Deep
   open Js_of_ocaml
