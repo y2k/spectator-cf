@@ -1,5 +1,5 @@
 (library
  (name lib)
- (libraries reactiveData promise_jsoo yojson)
+ (libraries reactiveData promise_jsoo yojson re)
  (preprocess
   (pps js_of_ocaml-ppx ppx_deriving_yojson)))

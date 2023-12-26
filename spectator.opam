@@ -11,6 +11,7 @@ depends: [
   "reactiveData"
   "promise_jsoo"
   "yojson"
+  "re"
   "odoc" {with-doc}
 ]
 build: [

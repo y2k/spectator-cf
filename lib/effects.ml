@@ -13,6 +13,17 @@ module Io = struct
 
   module Syntax = struct
     let ( let+ ) ma f = map f ma
+
+    module Monad = struct
+      let ( let* ) ma f =
+        {
+          f =
+            (fun callback ->
+              ma.f (fun a ->
+                  let mb = f a in
+                  mb.f callback));
+        }
+    end
   end
 
   let rec combine mas =

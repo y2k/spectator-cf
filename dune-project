@@ -16,4 +16,4 @@
 (package
  (name spectator)
  (allow_empty)
- (depends ocaml dune reactiveData promise_jsoo yojson))
+ (depends ocaml dune reactiveData promise_jsoo yojson re))
