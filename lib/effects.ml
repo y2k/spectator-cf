@@ -5,6 +5,7 @@ module Io = struct
     { f = (fun callback -> ma.f (fun x -> callback (f x))) }
 
   let pure x = { f = (fun callback -> callback x) }
+  let never = { f = ignore }
 
   let combine2 ma mb =
     { f = (fun callback -> ma.f (fun a -> mb.f (fun b -> callback (a, b)))) }
@@ -35,7 +36,11 @@ module Io = struct
     | [] -> pure []
 end
 
+type query_params = string * string list [@@deriving yojson]
+type query_result = Yojson.Safe.t list [@@deriving yojson]
+type fetch_params = string * Yojson.Safe.t [@@deriving yojson]
+type fetch_result = [ `Ok of string | `Error of string ] [@@deriving yojson]
+
 type _ Effect.t +=
-  | Fetch : (string * Yojson.Safe.t) -> (string, string) Result.t Io.t Effect.t
-  | QueryDbFx : (string * string list) -> Yojson.Safe.t list Io.t Effect.t
-  | ExecuteDbFx : (string * string list) -> unit Io.t Effect.t
+  | Fetch : fetch_params -> fetch_result Io.t Effect.t
+  | QueryDbFx : query_params -> query_result Io.t Effect.t

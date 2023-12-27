@@ -1,8 +1,17 @@
-{
-  "url": "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
-  "props": {
-    "body": "{\"chat_id\":\"241854720\",\"text\":\"Subscriptions:\\n- https://g.com/\"}",
-    "method": "POST",
-    "headers": { "Content-Type": "application/json" }
+[
+  {
+    "query": [
+      "SELECT * FROM new_subscriptions WHERE user_id = ?", [ "241854720" ]
+    ]
+  },
+  {
+    "fetch": [
+      "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+      {
+        "body": "{\"chat_id\":\"241854720\",\"text\":\"Subscriptions:\\n- https://g.com/\"}",
+        "method": "POST",
+        "headers": { "Content-Type": "application/json" }
+      }
+    ]
   }
-}
+]

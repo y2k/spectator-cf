@@ -44,7 +44,7 @@ let handle_add_command user_id url =
   let content = `Assoc [ ("url", `String url) ] |> Yojson.Safe.to_string in
   let f1 =
     Effect.perform
-      (ExecuteDbFx
+      (QueryDbFx
          ( "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
            [ user_id; content ] ))
   in
@@ -113,18 +113,6 @@ module RealEffectHandlers = struct
                             execute_sql env sql params
                             |> Promise.map (fun xs ->
                                    with_effect env callback xs)
-                            |> ignore);
-                      })
-            | ExecuteDbFx (sql, params) ->
-                Some
-                  (fun (k : (a, _) continuation) ->
-                    continue k
-                      {
-                        f =
-                          (fun callback ->
-                            execute_sql env sql params
-                            |> Promise.map (fun _ ->
-                                   with_effect env callback ())
                             |> ignore);
                       })
             | Fetch (url, props) ->

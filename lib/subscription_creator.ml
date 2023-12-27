@@ -31,7 +31,7 @@ let save_subs new_subs contents =
     List.map2
       (fun (id, user_id, url) result ->
         match result with
-        | Ok content when is_atom content -> Some (id, user_id, url)
+        | `Ok content when is_atom content -> Some (id, user_id, url)
         | _ -> None)
       (get_ids new_subs) contents
     |> List.filter_map Fun.id
@@ -39,7 +39,7 @@ let save_subs new_subs contents =
   (rss_list
   |> List.map (fun (id, _, _) ->
          Effect.perform
-           (ExecuteDbFx
+           (QueryDbFx
               ( "DELETE FROM new_subscriptions WHERE id = ?",
                 [ string_of_int id ] ))))
   @ (rss_list
@@ -54,7 +54,7 @@ let save_subs new_subs contents =
              |> Yojson.Safe.to_string
            in
            Effect.perform
-             (ExecuteDbFx
+             (QueryDbFx
                 ( "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
                   [ user_id; content ] ))))
   |> Io.combine
