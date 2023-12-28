@@ -5,6 +5,11 @@
     ]
   },
   {
+    "query": [
+      "SELECT * FROM subscriptions WHERE user_id = ?", [ "241854720" ]
+    ]
+  },
+  {
     "fetch": [
       "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
       {

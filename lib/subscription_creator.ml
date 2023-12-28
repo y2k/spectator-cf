@@ -45,12 +45,7 @@ let save_subs new_subs contents =
   @ (rss_list
     |> List.map (fun (_, user_id, url) ->
            let content =
-             `Assoc
-               [
-                 ("type", `String rss_type);
-                 ("user_id", `String user_id);
-                 ("url", `String url);
-               ]
+             `Assoc [ ("type", `String rss_type); ("url", `String url) ]
              |> Yojson.Safe.to_string
            in
            Effect.perform
@@ -70,7 +65,12 @@ let handle_ () =
 
 let handle env =
   let effect : unit Io.t Io.t =
-    Domain.RealEffectHandlers.with_effect env (fun _ -> handle_ ()) ()
+    Domain.RealEffectHandlers.with_effect env handle_ ()
   in
   Promise.make (fun ~resolve ~reject:_ ->
-      effect.f (fun e2 -> e2.f (fun _ -> resolve ())))
+      effect.f { log = [] } (fun w e2 ->
+          e2.f w (fun w _ ->
+              `List
+                (w.log |> List.rev |> List.map (fun (a, b) -> `List [ a; b ]))
+              |> Yojson.Safe.pretty_to_string |> print_endline;
+              resolve ())))

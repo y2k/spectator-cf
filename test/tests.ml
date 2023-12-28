@@ -75,7 +75,7 @@ module IoSample2 = struct
                     continue k
                       {
                         f =
-                          (fun callback ->
+                          (fun w callback ->
                             Dom_html.setTimeout
                               (fun () ->
                                 effects_log :=
@@ -86,7 +86,7 @@ module IoSample2 = struct
                                       );
                                     ]
                                   :: !effects_log;
-                                with_effect effects_log query_stage callback
+                                with_effect effects_log query_stage (callback w)
                                   result)
                               10.0
                             |> ignore);
@@ -97,7 +97,7 @@ module IoSample2 = struct
                     continue k
                       {
                         f =
-                          (fun callback ->
+                          (fun w callback ->
                             Dom_html.setTimeout
                               (fun () ->
                                 effects_log :=
@@ -108,7 +108,7 @@ module IoSample2 = struct
                                           params );
                                     ]
                                   :: !effects_log;
-                                with_effect effects_log query_stage callback
+                                with_effect effects_log query_stage (callback w)
                                   (`Ok ""))
                               10.0
                             |> ignore);
@@ -131,8 +131,8 @@ module IoSample2 = struct
     let effect : unit Io.t Io.t =
       with_effect effects_log stage handle_message msg
     in
-    effect.f (fun e2 ->
-        e2.f (fun _ ->
+    effect.f { log = [] } (fun w e2 ->
+        e2.f w (fun _w _ ->
             get_actual_effects_log effects_log
             |> Intergration_tests.assert_ ("expected." ^ sample)))
 

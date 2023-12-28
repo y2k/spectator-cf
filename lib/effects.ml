@@ -1,16 +1,12 @@
 module Io = struct
-  type 'a t = { f : ('a -> unit) -> unit }
+  type world = { log : (Yojson.Safe.t * Yojson.Safe.t) list }
+  type 'a t = { f : world -> (world -> 'a -> unit) -> unit }
 
   let map (f : 'a -> 'b) (ma : 'a t) : 'b t =
-    { f = (fun callback -> ma.f (fun x -> callback (f x))) }
+    { f = (fun w callback -> ma.f w (fun w2 x -> callback w2 (f x))) }
 
-  let pure x = { f = (fun callback -> callback x) }
-  let never = { f = ignore }
-
-  let combine2 ma mb =
-    { f = (fun callback -> ma.f (fun a -> mb.f (fun b -> callback (a, b)))) }
-
-  let ignore ma = { f = (fun callback -> ma.f (fun _ -> callback ())) }
+  let pure x = { f = (fun w callback -> callback w x) }
+  let never = { f = (fun _ _ -> ()) }
 
   module Syntax = struct
     let ( let+ ) ma f = map f ma
@@ -19,13 +15,23 @@ module Io = struct
       let ( let* ) ma f =
         {
           f =
-            (fun callback ->
-              ma.f (fun a ->
+            (fun w callback ->
+              ma.f w (fun w2 a ->
                   let mb = f a in
-                  mb.f callback));
+                  mb.f w2 callback));
         }
     end
   end
+
+  let combine2 ma mb =
+    let open Syntax in
+    let open Syntax.Monad in
+    let* a = ma in
+    let+ b = mb in
+    (a, b)
+
+  let ignore ma =
+    { f = (fun w callback -> ma.f w (fun w2 _ -> callback w2 ())) }
 
   let rec combine mas =
     let open Syntax in
