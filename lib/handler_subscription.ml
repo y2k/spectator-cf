@@ -65,12 +65,11 @@ let handle_ () =
 
 let handle env =
   let effect : unit Io.t Io.t =
-    Domain.RealEffectHandlers.with_effect env handle_ ()
+    Effects.RealEffectHandlers.with_effect env handle_ ()
   in
   Promise.make (fun ~resolve ~reject:_ ->
       effect.f { log = [] } (fun w e2 ->
           e2.f w (fun w _ ->
-              `List
-                (w.log |> List.rev |> List.map (fun (a, b) -> `List [ a; b ]))
+              `List (w.log |> List.rev)
               |> Yojson.Safe.pretty_to_string |> print_endline;
               resolve ())))

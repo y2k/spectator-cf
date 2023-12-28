@@ -47,13 +47,13 @@ end
 
 let () =
   let xml = Intergration_tests.read_sample "rss.xml" in
-  let actual = Lib.Subscription_creator.is_atom xml in
+  let actual = Lib.Handler_subscription.is_atom xml in
   if not actual then failwith "Not RSS"
 
 module IoSample2 = struct
   open Effect.Deep
   open Js_of_ocaml
-  open Lib.Domain
+  open Lib.Effects
 
   let rec with_effect : 'a 'b. _ -> _ -> ('a -> 'b) -> 'a -> 'b =
    fun effects_log query_stage f x ->
@@ -129,7 +129,7 @@ module IoSample2 = struct
     let effects_log = ref [] in
     let msg = Intergration_tests.read_sample sample in
     let effect : unit Io.t Io.t =
-      with_effect effects_log stage handle_message msg
+      with_effect effects_log stage Lib.Handler_bot.handle_message msg
     in
     effect.f { log = [] } (fun w e2 ->
         e2.f w (fun _w _ ->
@@ -146,7 +146,7 @@ module ScheduleTests = struct
   open Effect.Deep
 
   let () =
-    try_with Lib.Subscription_creator.get_new_subs ()
+    try_with Lib.Handler_subscription.get_new_subs ()
       {
         effc =
           (fun (type a) (eff : a Effect.t) ->
@@ -160,7 +160,7 @@ module ScheduleTests = struct
     |> ignore
 
   let () =
-    try_with Lib.Subscription_creator.get_new_sub_contents
+    try_with Lib.Handler_subscription.get_new_sub_contents
       [
         `Assoc
           [
@@ -186,7 +186,7 @@ module ScheduleTests = struct
 
   let () =
     try_with
-      (Lib.Subscription_creator.save_subs
+      (Lib.Handler_subscription.save_subs
          [
            `Assoc
              [

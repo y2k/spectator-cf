@@ -3,7 +3,7 @@ open Js_of_ocaml
 let () =
   Js.export "fetch" (fun request env _ctx ->
       Promise.return ()
-      |> Promise.then_ ~fulfilled:(fun _ -> Lib.Domain.handle_fetch request env)
+      |> Promise.then_ ~fulfilled:(fun _ -> Lib.Handler_bot.handle_fetch request env)
       |> Promise.catch ~rejected:(fun e ->
              Firebug.console##warn e |> Promise.return)
       |> Promise.then_ ~fulfilled:(fun _ ->
@@ -15,7 +15,7 @@ let () =
       ctx##waitUntil
         (Promise.return ()
         |> Promise.then_ ~fulfilled:(fun _ ->
-               Lib.Subscription_creator.handle env)
+               Lib.Handler_subscription.handle env)
         |> Promise.catch ~rejected:(fun e ->
                Firebug.console##warn e |> Promise.return)
         |> Promise.then_ ~fulfilled:(fun _ -> Promise.return ())))

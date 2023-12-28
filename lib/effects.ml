@@ -1,5 +1,5 @@
 module Io = struct
-  type world = { log : (Yojson.Safe.t * Yojson.Safe.t) list }
+  type world = { log : Yojson.Safe.t list }
   type 'a t = { f : world -> (world -> 'a -> unit) -> unit }
 
   let map (f : 'a -> 'b) (ma : 'a t) : 'b t =
@@ -50,3 +50,95 @@ type fetch_result = [ `Ok of string | `Error of string ] [@@deriving yojson]
 type _ Effect.t +=
   | Fetch : fetch_params -> fetch_result Io.t Effect.t
   | QueryDbFx : query_params -> query_result Io.t Effect.t
+
+module RealEffectHandlers = struct
+  open Effect.Deep
+  open Js_of_ocaml
+
+  let execute_sql env (sql : string) (params : string list) :
+      Yojson.Safe.t list Promise.t =
+    let open Promise.Syntax in
+    let+ result =
+      (Js.Unsafe.meth_call
+         (env ##. DB##prepare sql)
+         "bind"
+         (params |> List.map Js.Unsafe.inject |> Array.of_list))##run
+    in
+    result##.results |> Json.output |> Js.to_string |> Yojson.Safe.from_string
+    |> function
+    | `List xs -> xs
+    | x -> [ x ]
+
+  let fix_url env url =
+    let token = env ##. TG_TOKEN_ in
+    url |> String.split_on_char '~'
+    |> List.map (function "TG_TOKEN" -> token | x -> x)
+    |> List.fold_left ( ^ ) ""
+
+  let rec with_effect : 'a 'b. _ -> ('a -> 'b) -> 'a -> 'b =
+   fun env f x ->
+    try_with f x
+      {
+        effc =
+          (fun (type a) (eff : a Effect.t) ->
+            match eff with
+            | QueryDbFx ((sql, params) as p) ->
+                Some
+                  (fun (k : (a, _) continuation) ->
+                    continue k
+                      {
+                        f =
+                          (fun w callback ->
+                            execute_sql env sql params
+                            |> Promise.map (fun xs ->
+                                   let (w : Io.world) =
+                                     {
+                                       log =
+                                         `Assoc
+                                           [
+                                             ("name", `String "query");
+                                             ("in", query_params_to_yojson p);
+                                             ("out", query_result_to_yojson xs);
+                                           ]
+                                         :: w.log;
+                                     }
+                                   in
+                                   with_effect env (callback w) xs)
+                            |> ignore);
+                      })
+            | Fetch ((url, props) as p) ->
+                Some
+                  (fun (k : (a, _) continuation) ->
+                    continue k
+                      {
+                        f =
+                          (fun w callback ->
+                            let url = fix_url env url in
+                            Js.Unsafe.fun_call Js.Unsafe.global##.fetch
+                              [|
+                                Js.Unsafe.inject url;
+                                props |> Yojson.Safe.to_string |> Js.string
+                                |> Json.unsafe_input;
+                              |]
+                            |> Promise.then_ ~fulfilled:(fun x -> x##text)
+                            |> Promise.then_ ~fulfilled:(fun x ->
+                                   let x = `Ok x in
+                                   let (w : Io.world) =
+                                     {
+                                       log =
+                                         `Assoc
+                                           [
+                                             ("name", `String "fetch");
+                                             ("in", fetch_params_to_yojson p);
+                                             ("out", fetch_result_to_yojson x);
+                                           ]
+                                         :: w.log;
+                                     }
+                                   in
+                                   with_effect env (callback w) x;
+                                   Promise.return ())
+                            |> ignore);
+                      })
+            | _ -> None);
+      }
+end
