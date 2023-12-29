@@ -45,7 +45,13 @@ end
 type query_params = string * string list [@@deriving yojson]
 type query_result = Yojson.Safe.t list [@@deriving yojson]
 type fetch_params = string * Yojson.Safe.t [@@deriving yojson]
-type fetch_result = [ `Ok of string | `Error of string ] [@@deriving yojson]
+type fetch_result = (string, string) result
+
+let fetch_result_to_yojson (x : fetch_result) : Yojson.Safe.t =
+  (match x with
+  | Ok x -> `Ok (x |> Digest.string |> Digest.to_hex)
+  | Error e -> `Error e)
+  |> [%to_yojson: [ `Ok of string | `Error of string ]]
 
 type _ Effect.t +=
   | Fetch : fetch_params -> fetch_result Io.t Effect.t
@@ -122,7 +128,7 @@ module RealEffectHandlers = struct
                               |]
                             |> Promise.then_ ~fulfilled:(fun x -> x##text)
                             |> Promise.then_ ~fulfilled:(fun x ->
-                                   let x = `Ok x in
+                                   let x = Ok x in
                                    let (w : Io.world) =
                                      {
                                        log =

@@ -109,7 +109,7 @@ module IoSample2 = struct
                                     ]
                                   :: !effects_log;
                                 with_effect effects_log query_stage (callback w)
-                                  (`Ok ""))
+                                  (Ok ""))
                               10.0
                             |> ignore);
                       })
@@ -198,7 +198,7 @@ module ScheduleTests = struct
                    |> Yojson.Safe.to_string) );
              ];
          ])
-      [ `Ok {|<feed xmlns="http://www.w3.org/2005/Atom">|} ]
+      [ Ok {|<feed xmlns="http://www.w3.org/2005/Atom">|} ]
       {
         effc =
           (fun (type a) (eff : a Effect.t) ->

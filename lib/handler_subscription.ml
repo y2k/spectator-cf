@@ -31,7 +31,7 @@ let save_subs new_subs contents =
     List.map2
       (fun (id, user_id, url) result ->
         match result with
-        | `Ok content when is_atom content -> Some (id, user_id, url)
+        | Ok content when is_atom content -> Some (id, user_id, url)
         | _ -> None)
       (get_ids new_subs) contents
     |> List.filter_map Fun.id
