@@ -1,7 +1,7 @@
 open Effects
 
 let rss_type = "b18036ba-0838-437a-8925-7524cf8b07b9"
-let atom_re = Re.Perl.compile_pat {|<feed xmlns="http://www.w3.org/2005/Atom">|}
+let atom_re = Re.Perl.compile_pat {|<feed xmlns="http://www.w3.org/2005/Atom"|}
 let is_atom content = Re.execp atom_re content
 
 let get_ids new_subs =

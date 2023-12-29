@@ -1,5 +1,3 @@
-open Lib.Effects
-
 module Intergration_tests = struct
   let create_sample_path filename = "../../../test/samples/" ^ filename
 
@@ -46,9 +44,13 @@ module Intergration_tests = struct
 end
 
 let () =
-  let xml = Intergration_tests.read_sample "rss.xml" in
-  let actual = Lib.Handler_subscription.is_atom xml in
-  if not actual then failwith "Not RSS"
+  let test name =
+    let actual =
+      Intergration_tests.read_sample name |> Lib.Handler_subscription.is_atom
+    in
+    if not actual then failwith @@ name ^ " not RSS/ATOM"
+  in
+  test "ac4694860f4a642899c6f147141d3a89"
 
 module IoSample2 = struct
   open Effect.Deep
@@ -142,72 +144,63 @@ module IoSample2 = struct
   let () = assert_ "sample4.json" "1"
 end
 
+module XmlTests = struct
+  let () =
+    Intergration_tests.read_sample "ac4694860f4a642899c6f147141d3a89"
+    |> Xml.parse_string |> Xml.children
+    |> List.filter (fun x -> Xml.tag x = "entry")
+    |> List.length |> string_of_int |> ignore;
+    ()
+end
+
 module ScheduleTests = struct
   open Effect.Deep
+  module U = Yojson.Safe.Util
 
-  let () =
-    try_with Lib.Handler_subscription.get_new_subs ()
-      {
-        effc =
-          (fun (type a) (eff : a Effect.t) ->
-            match eff with
-            | QueryDbFx p ->
-                Lib.Effects.query_params_to_yojson p
-                |> Yojson.Safe.pretty_to_string |> print_endline;
-                Some (fun _ -> Io.never)
-            | _ -> None);
-      }
-    |> ignore
+  let test log_name =
+    let log =
+      Intergration_tests.read_sample log_name
+      |> Yojson.Safe.from_string |> Yojson.Safe.Util.to_list |> ref
+    in
+    let rec run_effect : 'a 'b. ('a -> 'b) -> 'a -> 'b =
+     fun f x ->
+      try_with f x
+        {
+          effc =
+            (fun (type a) (eff : a Effect.t) ->
+              let open Lib.Effects in
+              let entity = List.hd !log in
+              log := List.tl !log;
+              match eff with
+              | QueryDbFx params ->
+                  if "database" <> (U.member "name" entity |> U.to_string) then
+                    failwith __LOC__;
+                  if params |> query_params_to_yojson <> U.member "in" entity
+                  then failwith __LOC__;
+                  let result =
+                    U.member "out" entity |> query_result_of_yojson
+                    |> Result.get_ok
+                  in
+                  Some
+                    (fun (k : (a, _) continuation) ->
+                      continue k { f = (fun w c -> run_effect (c w) result) })
+              | Fetch params ->
+                  if "fetch" <> (U.member "name" entity |> U.to_string) then
+                    failwith __LOC__;
+                  if params |> fetch_params_to_yojson <> U.member "in" entity
+                  then failwith __LOC__;
+                  let result =
+                    U.member "out" entity |> fetch_result_of_yojson
+                    |> Result.get_ok
+                  in
+                  Some
+                    (fun (k : (a, _) continuation) ->
+                      continue k { f = (fun w c -> run_effect (c w) result) })
+              | _ -> None);
+        }
+    in
+    let ef = run_effect Lib.Handler_subscription.handle_ () in
+    ef.f { log = [] } (fun w e2 -> e2.f w (fun _w _x -> print_endline "END"))
 
-  let () =
-    try_with Lib.Handler_subscription.get_new_sub_contents
-      [
-        `Assoc
-          [
-            ("id", `Int 1);
-            ("user_id", `String "2");
-            ( "content",
-              `String
-                (`Assoc [ ("url", `String "https://g.com/") ]
-                |> Yojson.Safe.to_string) );
-          ];
-      ]
-      {
-        effc =
-          (fun (type a) (eff : a Effect.t) ->
-            match eff with
-            | Fetch p ->
-                Lib.Effects.fetch_params_to_yojson p
-                |> Yojson.Safe.pretty_to_string |> print_endline;
-                Some (fun _ -> Io.never)
-            | _ -> None);
-      }
-    |> ignore
-
-  let () =
-    try_with
-      (Lib.Handler_subscription.save_subs
-         [
-           `Assoc
-             [
-               ("id", `Int 1);
-               ("user_id", `String "2");
-               ( "content",
-                 `String
-                   (`Assoc [ ("url", `String "https://g.com/") ]
-                   |> Yojson.Safe.to_string) );
-             ];
-         ])
-      [ Ok {|<feed xmlns="http://www.w3.org/2005/Atom">|} ]
-      {
-        effc =
-          (fun (type a) (eff : a Effect.t) ->
-            match eff with
-            | QueryDbFx p ->
-                Lib.Effects.query_params_to_yojson p
-                |> Yojson.Safe.pretty_to_string |> print_endline;
-                Some (fun _ -> Io.never)
-            | _ -> None);
-      }
-    |> ignore
+  let () = test "schedule1.json"
 end

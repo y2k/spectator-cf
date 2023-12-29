@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:/apple/homebrew-apple/commits/main</id>
+  <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commits/main"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/apple/homebrew-apple/commits/main.atom"/>
+  <title>Recent Commits to homebrew-apple:main</title>
+  <updated>2023-11-16T02:32:41Z</updated>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/2bc44284e24d39ed64d6f492a0e1f4c47a5ced08</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/2bc44284e24d39ed64d6f492a0e1f4c47a5ced08"/>
+    <title>
+        Game Porting Toolkit 1.1
+    </title>
+    <updated>2023-11-16T02:32:41Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Game Porting Toolkit 1.1&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/ea1a3cec94bd668a36ce4603fcd3024559261c30</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/ea1a3cec94bd668a36ce4603fcd3024559261c30"/>
+    <title>
+        Version number 1.0.4
+    </title>
+    <updated>2023-08-21T22:56:04Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Version number 1.0.4&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/74b4a34683e5e7487e09866f3fdc41a7d94d3d65</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/74b4a34683e5e7487e09866f3fdc41a7d94d3d65"/>
+    <title>
+        Game Porting Toolkit 1.0 beta 4
+    </title>
+    <updated>2023-08-21T22:07:57Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Game Porting Toolkit 1.0 beta 4&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/0a64b418db78b60f9a887b25fb7a0b11d46fbf82</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/0a64b418db78b60f9a887b25fb7a0b11d46fbf82"/>
+    <title>
+        Game Porting Toolkit 1.0 (beta 3)
+    </title>
+    <updated>2023-07-28T22:21:55Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Game Porting Toolkit 1.0 (beta 3)&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/293d6d21b3b3a9160c83dcc6042ae19329cd1736</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/293d6d21b3b3a9160c83dcc6042ae19329cd1736"/>
+    <title>
+        Game Porting Toolkit 1.0.2
+    </title>
+    <updated>2023-07-01T03:16:06Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Game Porting Toolkit 1.0.2&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/ba912ec2d9b6ec5e1eb8b0a09a143a3ed6e39c23</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/ba912ec2d9b6ec5e1eb8b0a09a143a3ed6e39c23"/>
+    <title>
+        Add README.md
+    </title>
+    <updated>2023-06-06T18:24:51Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Add README.md&lt;/pre&gt;
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/033b5e49598c5ac52858470c4f4bbdea862de99a</id>
+    <link type="text/html" rel="alternate" href="https://github.com/apple/homebrew-apple/commit/033b5e49598c5ac52858470c4f4bbdea862de99a"/>
+    <title>
+        Game Porting Toolkit 1.0.
+    </title>
+    <updated>2023-06-03T20:12:34Z</updated>
+    <media:thumbnail height="30" width="30" url="https://0.gravatar.com/avatar/2f29aead6bdacd07d310f87997df9744?d=https%3A%2F%2Fgithub.githubassets.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png&amp;r=g&amp;s=30"/>
+    <author>
+      <name></name>
+      <email>ksluder@apple.com</email>
+    </author>
+    <content type="html">
+      &lt;pre style=&#39;white-space:pre-wrap;width:81ex&#39;&gt;Game Porting Toolkit 1.0.&lt;/pre&gt;
+    </content>
+  </entry>
+</feed>

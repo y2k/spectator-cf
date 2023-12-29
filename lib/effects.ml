@@ -53,6 +53,10 @@ let fetch_result_to_yojson (x : fetch_result) : Yojson.Safe.t =
   | Error e -> `Error e)
   |> [%to_yojson: [ `Ok of string | `Error of string ]]
 
+let fetch_result_of_yojson (json : Yojson.Safe.t) =
+  json |> [%of_yojson: [ `Ok of string | `Error of string ]]
+  |> Result.map (fun x -> match x with `Ok x -> Ok x | `Error x -> Error x)
+
 type _ Effect.t +=
   | Fetch : fetch_params -> fetch_result Io.t Effect.t
   | QueryDbFx : query_params -> query_result Io.t Effect.t
