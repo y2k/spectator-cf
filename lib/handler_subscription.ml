@@ -18,12 +18,11 @@ let get_ids new_subs =
 
 (* ================================== *)
 
-let get_new_subs () =
-  Effect.perform (QueryDbFx ("SELECT * FROM new_subscriptions LIMIT 5", []))
+let get_new_subs = Db.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
 
 let get_new_sub_contents new_subs =
   get_ids new_subs
-  |> List.map (fun (_, _, url) -> Effect.perform (Fetch (url, `Assoc [])))
+  |> List.map (fun (_, _, url) -> Db.fetch (url, `Assoc []))
   |> Io.combine
 
 let save_subs new_subs contents =
@@ -38,38 +37,35 @@ let save_subs new_subs contents =
   in
   (rss_list
   |> List.map (fun (id, _, _) ->
-         Effect.perform
-           (QueryDbFx
-              ( "DELETE FROM new_subscriptions WHERE id = ?",
-                [ string_of_int id ] ))))
+         Db.query
+           ("DELETE FROM new_subscriptions WHERE id = ?", [ string_of_int id ]))
+  )
   @ (rss_list
     |> List.map (fun (_, user_id, url) ->
            let content =
              `Assoc [ ("type", `String rss_type); ("url", `String url) ]
              |> Yojson.Safe.to_string
            in
-           Effect.perform
-             (QueryDbFx
-                ( "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
-                  [ user_id; content ] ))))
+           Db.query
+             ( "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
+               [ user_id; content ] )))
   |> Io.combine
 
 (* ================================== *)
 
 let handle_ () =
   let open Io.Syntax.Monad in
-  let* new_subs = get_new_subs () in
+  let* new_subs = get_new_subs in
   let* rss_list = get_new_sub_contents new_subs in
   let* _ = save_subs new_subs rss_list in
-  Io.pure (Io.pure ())
+  Io.pure ()
 
 let handle env =
-  let effect : unit Io.t Io.t =
+  let effect : unit Io.t =
     Effects.RealEffectHandlers.with_effect env handle_ ()
   in
   Promise.make (fun ~resolve ~reject:_ ->
-      effect.f { log = [] } (fun w e2 ->
-          e2.f w (fun w _ ->
-              `List (w.log |> List.rev)
-              |> Yojson.Safe.pretty_to_string |> print_endline;
-              resolve ())))
+      effect.f { log = []; perform = Io.unhandled } (fun w () ->
+          `List (w.log |> List.rev)
+          |> Yojson.Safe.pretty_to_string |> print_endline;
+          resolve ()))

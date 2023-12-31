@@ -1,5 +1,12 @@
 module Io = struct
-  type world = { log : Yojson.Safe.t list }
+  type world = {
+    log : Yojson.Safe.t list;
+    perform : world -> Yojson.Safe.t -> (world -> Yojson.Safe.t -> unit) -> unit;
+  }
+
+  let unhandled (_ : world) p _ : unit =
+    failwith @@ "Effect unhandled: " ^ Yojson.Safe.to_string p
+
   type 'a t = { f : world -> (world -> 'a -> unit) -> unit }
 
   let map (f : 'a -> 'b) (ma : 'a t) : 'b t =
@@ -7,6 +14,7 @@ module Io = struct
 
   let pure x = { f = (fun w callback -> callback w x) }
   let never = { f = (fun _ _ -> ()) }
+  let resolve_world : world t = { f = (fun w callback -> callback w w) }
 
   module Syntax = struct
     let ( let+ ) ma f = map f ma
@@ -24,21 +32,21 @@ module Io = struct
   end
 
   let combine2 ma mb =
-    let open Syntax in
     let open Syntax.Monad in
     let* a = ma in
-    let+ b = mb in
-    (a, b)
+    let* b = mb in
+    pure (a, b)
 
   let ignore ma =
     { f = (fun w callback -> ma.f w (fun w2 _ -> callback w2 ())) }
 
   let rec combine mas =
-    let open Syntax in
+    let open Syntax.Monad in
     match mas with
     | mx :: mxs ->
-        let+ x, xs = combine2 mx (combine mxs) in
-        x :: xs
+        let* x = mx in
+        let* xs = combine mxs in
+        pure (x :: xs)
     | [] -> pure []
 end
 
@@ -56,6 +64,37 @@ let fetch_result_to_yojson (x : fetch_result) : Yojson.Safe.t =
 let fetch_result_of_yojson (json : Yojson.Safe.t) =
   json |> [%of_yojson: [ `Ok of string | `Error of string ]]
   |> Result.map (fun x -> match x with `Ok x -> Ok x | `Error x -> Error x)
+
+module Db = struct
+  let query (params : query_params) : query_result Io.t =
+    {
+      f =
+        (fun w c ->
+          let ap =
+            `Assoc
+              [
+                ("name", `String "database");
+                ("in", query_params_to_yojson params);
+              ]
+          in
+          w.perform w ap (fun w x ->
+              match x with `List xs -> c w xs | x -> c w [ x ]));
+    }
+
+  let fetch (params : fetch_params) : fetch_result Io.t =
+    {
+      f =
+        (fun w c ->
+          let ap =
+            `Assoc
+              [
+                ("name", `String "fetch"); ("in", fetch_params_to_yojson params);
+              ]
+          in
+          w.perform w ap (fun w x ->
+              c w (fetch_result_of_yojson x |> Result.get_ok)));
+    }
+end
 
 type _ Effect.t +=
   | Fetch : fetch_params -> fetch_result Io.t Effect.t
@@ -85,6 +124,24 @@ module RealEffectHandlers = struct
     |> List.map (function "TG_TOKEN" -> token | x -> x)
     |> List.fold_left ( ^ ) ""
 
+  let attach_db_effect env (w : Io.world) : Io.world =
+    let perform (w2 : Io.world) (p : Yojson.Safe.t)
+        (callback : _ -> Yojson.Safe.t -> unit) =
+      let module U = Yojson.Safe.Util in
+      match p |> U.member "name" |> U.to_string with
+      | "database" ->
+          let q, ps =
+            p |> U.member "in" |> query_params_of_yojson |> Result.get_ok
+          in
+          execute_sql env q ps
+          |> Promise.then_ ~fulfilled:(fun x ->
+                 callback w2 (`List x);
+                 Promise.return ())
+          |> ignore
+      | _ -> w.perform w2 p callback
+    in
+    { w with perform }
+
   let rec with_effect : 'a 'b. _ -> ('a -> 'b) -> 'a -> 'b =
    fun env f x ->
     try_with f x
@@ -103,6 +160,7 @@ module RealEffectHandlers = struct
                             |> Promise.map (fun xs ->
                                    let (w : Io.world) =
                                      {
+                                       w with
                                        log =
                                          `Assoc
                                            [
@@ -135,6 +193,7 @@ module RealEffectHandlers = struct
                                    let x = Ok x in
                                    let (w : Io.world) =
                                      {
+                                       w with
                                        log =
                                          `Assoc
                                            [

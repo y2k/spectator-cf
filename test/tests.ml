@@ -133,7 +133,7 @@ module IoSample2 = struct
     let effect : unit Io.t Io.t =
       with_effect effects_log stage Lib.Handler_bot.handle_message msg
     in
-    effect.f { log = [] } (fun w e2 ->
+    effect.f { log = []; perform = Io.unhandled } (fun w e2 ->
         e2.f w (fun _w _ ->
             get_actual_effects_log effects_log
             |> Intergration_tests.assert_ ("expected." ^ sample)))
@@ -155,7 +155,52 @@ end
 
 module ScheduleTests = struct
   open Effect.Deep
+  open Lib.Effects
   module U = Yojson.Safe.Util
+
+  let attach_debug_query_effect (log : Yojson.Safe.t list ref) (w0 : Io.world) =
+    {
+      w0 with
+      perform =
+        (fun w p callback ->
+          match p |> U.member "name" |> U.to_string with
+          | "database" ->
+              let entity = List.hd !log in
+              log := List.tl !log;
+              let params =
+                p |> U.member "in" |> query_params_of_yojson
+                |> Result.fold ~ok:Fun.id ~error:(fun _ -> failwith __LOC__)
+              in
+              if "database" <> (U.member "name" entity |> U.to_string) then
+                failwith __LOC__;
+              if params |> query_params_to_yojson <> U.member "in" entity then
+                failwith __LOC__;
+              let result = U.member "out" entity in
+              callback w result
+          | _ -> w0.perform w p callback);
+    }
+
+  let attach_debug_fetch_effect (log : Yojson.Safe.t list ref) (w0 : Io.world) =
+    {
+      w0 with
+      perform =
+        (fun w p callback ->
+          match p |> U.member "name" |> U.to_string with
+          | "fetch" ->
+              let entity = List.hd !log in
+              log := List.tl !log;
+              let params =
+                p |> U.member "in" |> fetch_params_of_yojson
+                |> Result.fold ~ok:Fun.id ~error:(fun _ -> failwith __LOC__)
+              in
+              if "fetch" <> (U.member "name" entity |> U.to_string) then
+                failwith __LOC__;
+              if params |> fetch_params_to_yojson <> U.member "in" entity then
+                failwith __LOC__;
+              let result = U.member "out" entity in
+              callback w result
+          | _ -> w0.perform w p callback);
+    }
 
   let test log_name =
     let log =
@@ -168,11 +213,10 @@ module ScheduleTests = struct
         {
           effc =
             (fun (type a) (eff : a Effect.t) ->
-              let open Lib.Effects in
               let entity = List.hd !log in
               log := List.tl !log;
               match eff with
-              | QueryDbFx params ->
+              (* | QueryDbFx params ->
                   if "database" <> (U.member "name" entity |> U.to_string) then
                     failwith __LOC__;
                   if params |> query_params_to_yojson <> U.member "in" entity
@@ -183,7 +227,7 @@ module ScheduleTests = struct
                   in
                   Some
                     (fun (k : (a, _) continuation) ->
-                      continue k { f = (fun w c -> run_effect (c w) result) })
+                      continue k { f = (fun w c -> run_effect (c w) result) }) *)
               | Fetch params ->
                   if "fetch" <> (U.member "name" entity |> U.to_string) then
                     failwith __LOC__;
@@ -200,7 +244,11 @@ module ScheduleTests = struct
         }
     in
     let ef = run_effect Lib.Handler_subscription.handle_ () in
-    ef.f { log = [] } (fun w e2 -> e2.f w (fun _w _x -> print_endline "END"))
+    ef.f
+      ({ Io.log = []; perform = Lib.Effects.Io.unhandled }
+      |> attach_debug_query_effect log
+      |> attach_debug_fetch_effect log)
+      (fun _w _x -> print_endline "END")
 
   let () = test "schedule1.json"
 end

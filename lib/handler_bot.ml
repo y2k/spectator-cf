@@ -83,7 +83,7 @@ let handle_fetch request env =
     Effects.RealEffectHandlers.with_effect env handle_message text
   in
   Promise.make (fun ~resolve ~reject:_ ->
-      effect.f { log = [] } (fun w e2 ->
+      effect.f { log = []; perform = Io.unhandled } (fun w e2 ->
           e2.f w (fun w _ ->
               `List (w.log |> List.rev)
               |> Yojson.Safe.pretty_to_string |> print_endline;
