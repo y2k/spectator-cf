@@ -26,6 +26,11 @@ let get_new_sub_contents new_subs =
   |> Io.combine
 
 let save_subs new_subs contents =
+  (* print_endline @@ "[LOG] save_subs.new_subs: "
+     ^ (`List new_subs |> Yojson.Safe.pretty_to_string);
+     print_endline @@ "[LOG] save_subs.contents: "
+     ^ (`List (List.map fetch_result_to_yojson contents)
+       |> Yojson.Safe.pretty_to_string); *)
   let rss_list =
     List.map2
       (fun (id, user_id, url) result ->
@@ -53,19 +58,20 @@ let save_subs new_subs contents =
 
 (* ================================== *)
 
-let handle_ () =
-  let open Io.Syntax.Monad in
+let handle_ =
+  let open Io.Syntax in
   let* new_subs = get_new_subs in
   let* rss_list = get_new_sub_contents new_subs in
   let* _ = save_subs new_subs rss_list in
   Io.pure ()
 
 let handle env =
-  let effect : unit Io.t =
-    Effects.RealEffectHandlers.with_effect env handle_ ()
-  in
+  let effect : unit Io.t = handle_ in
   Promise.make (fun ~resolve ~reject:_ ->
-      effect.f { log = []; perform = Io.unhandled } (fun w () ->
-          `List (w.log |> List.rev)
-          |> Yojson.Safe.pretty_to_string |> print_endline;
-          resolve ()))
+      let w : Io.world =
+        { perform = Io.unhandled }
+        |> RealEffectHandlers.attach_db_effect env
+        |> RealEffectHandlers.attach_fetch_effect env
+        |> RealEffectHandlers.attach_log_effect
+      in
+      effect.f w (fun _ () -> resolve ()))

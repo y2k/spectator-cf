@@ -15,15 +15,15 @@
       "in": [
         "https://github.com/apple/homebrew-apple/commits/main.atom", {}
       ],
-      "out": [ "Ok", "ac4694860f4a642899c6f147141d3a89" ]
+      "out": [ "Ok", "md5:ac4694860f4a642899c6f147141d3a89" ]
     },
     {
-      "name": "database_",
+      "name": "database",
       "in": [ "DELETE FROM new_subscriptions WHERE id = ?", [ "1" ] ],
       "out": []
     },
     {
-      "name": "database_",
+      "name": "database",
       "in": [
         "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
         [

@@ -1,0 +1,30 @@
+[
+    {
+        "name": "database",
+        "in": [
+            "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
+            [
+                "241854720",
+                "{\"url\":\"https://g.com/\"}"
+            ]
+        ],
+        "out": []
+    },
+    {
+        "name": "fetch",
+        "in": [
+            "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+            {
+                "body": "{\"chat_id\":\"241854720\",\"text\":\"Subscription added\"}",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            }
+        ],
+        "out": [
+            "Ok",
+            "{\"ok\":true,\"result\":{\"message_id\":5719,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704131833,\"text\":\"Subscription added\"}}"
+        ]
+    }
+]

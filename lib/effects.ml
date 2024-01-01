@@ -1,6 +1,5 @@
 module Io = struct
   type world = {
-    log : Yojson.Safe.t list;
     perform : world -> Yojson.Safe.t -> (world -> Yojson.Safe.t -> unit) -> unit;
   }
 
@@ -19,20 +18,18 @@ module Io = struct
   module Syntax = struct
     let ( let+ ) ma f = map f ma
 
-    module Monad = struct
-      let ( let* ) ma f =
-        {
-          f =
-            (fun w callback ->
-              ma.f w (fun w2 a ->
-                  let mb = f a in
-                  mb.f w2 callback));
-        }
-    end
+    let ( let* ) ma f =
+      {
+        f =
+          (fun w callback ->
+            ma.f w (fun w2 a ->
+                let mb = f a in
+                mb.f w2 callback));
+      }
   end
 
   let combine2 ma mb =
-    let open Syntax.Monad in
+    let open Syntax in
     let* a = ma in
     let* b = mb in
     pure (a, b)
@@ -41,7 +38,7 @@ module Io = struct
     { f = (fun w callback -> ma.f w (fun w2 _ -> callback w2 ())) }
 
   let rec combine mas =
-    let open Syntax.Monad in
+    let open Syntax in
     match mas with
     | mx :: mxs ->
         let* x = mx in
@@ -57,7 +54,8 @@ type fetch_result = (string, string) result
 
 let fetch_result_to_yojson (x : fetch_result) : Yojson.Safe.t =
   (match x with
-  | Ok x -> `Ok (x |> Digest.string |> Digest.to_hex)
+  (* | Ok x -> `Ok (x |> Digest.string |> Digest.to_hex) *)
+  | Ok x -> `Ok x
   | Error e -> `Error e)
   |> [%to_yojson: [ `Ok of string | `Error of string ]]
 
@@ -101,8 +99,28 @@ type _ Effect.t +=
   | QueryDbFx : query_params -> query_result Io.t Effect.t
 
 module RealEffectHandlers = struct
-  open Effect.Deep
   open Js_of_ocaml
+
+  let format_json_for_log = function
+    (* | `String x when String.starts_with ~prefix:"{" x ->
+           `Assoc [ ("<JSON>", Yojson.Safe.from_string x) ]
+       | `List xs -> `List (List.map format_json_for_log xs)
+       | `Assoc xs ->
+           `Assoc (List.map (fun (k, v) -> (k, format_json_for_log v)) xs) *)
+    | x -> x
+
+  let attach_log_effect (w : Io.world) : Io.world =
+    let perform (w2 : Io.world) (p : Yojson.Safe.t)
+        (callback : _ -> Yojson.Safe.t -> unit) =
+      let module U = Yojson.Safe.Util in
+      w.perform w2 p (fun w result ->
+          let log_p = p |> format_json_for_log |> Yojson.Safe.Util.to_assoc in
+          let log_result = format_json_for_log result in
+          `Assoc (log_p @ [ ("out", log_result) ])
+          |> Yojson.Safe.pretty_to_string |> print_endline;
+          callback w result)
+    in
+    { perform }
 
   let execute_sql env (sql : string) (params : string list) :
       Yojson.Safe.t list Promise.t =
@@ -117,12 +135,6 @@ module RealEffectHandlers = struct
     |> function
     | `List xs -> xs
     | x -> [ x ]
-
-  let fix_url env url =
-    let token = env ##. TG_TOKEN_ in
-    url |> String.split_on_char '~'
-    |> List.map (function "TG_TOKEN" -> token | x -> x)
-    |> List.fold_left ( ^ ) ""
 
   let attach_db_effect env (w : Io.world) : Io.world =
     let perform (w2 : Io.world) (p : Yojson.Safe.t)
@@ -140,74 +152,36 @@ module RealEffectHandlers = struct
           |> ignore
       | _ -> w.perform w2 p callback
     in
-    { w with perform }
+    { perform }
 
-  let rec with_effect : 'a 'b. _ -> ('a -> 'b) -> 'a -> 'b =
-   fun env f x ->
-    try_with f x
-      {
-        effc =
-          (fun (type a) (eff : a Effect.t) ->
-            match eff with
-            | QueryDbFx ((sql, params) as p) ->
-                Some
-                  (fun (k : (a, _) continuation) ->
-                    continue k
-                      {
-                        f =
-                          (fun w callback ->
-                            execute_sql env sql params
-                            |> Promise.map (fun xs ->
-                                   let (w : Io.world) =
-                                     {
-                                       w with
-                                       log =
-                                         `Assoc
-                                           [
-                                             ("name", `String "query");
-                                             ("in", query_params_to_yojson p);
-                                             ("out", query_result_to_yojson xs);
-                                           ]
-                                         :: w.log;
-                                     }
-                                   in
-                                   with_effect env (callback w) xs)
-                            |> ignore);
-                      })
-            | Fetch ((url, props) as p) ->
-                Some
-                  (fun (k : (a, _) continuation) ->
-                    continue k
-                      {
-                        f =
-                          (fun w callback ->
-                            let url = fix_url env url in
-                            Js.Unsafe.fun_call Js.Unsafe.global##.fetch
-                              [|
-                                Js.Unsafe.inject url;
-                                props |> Yojson.Safe.to_string |> Js.string
-                                |> Json.unsafe_input;
-                              |]
-                            |> Promise.then_ ~fulfilled:(fun x -> x##text)
-                            |> Promise.then_ ~fulfilled:(fun x ->
-                                   let x = Ok x in
-                                   let (w : Io.world) =
-                                     {
-                                       w with
-                                       log =
-                                         `Assoc
-                                           [
-                                             ("name", `String "fetch");
-                                             ("in", fetch_params_to_yojson p);
-                                             ("out", fetch_result_to_yojson x);
-                                           ]
-                                         :: w.log;
-                                     }
-                                   in
-                                   with_effect env (callback w) x;
-                                   Promise.return ())
-                            |> ignore);
-                      })
-            | _ -> None);
-      }
+  let fix_url env url =
+    let token = env ##. TG_TOKEN_ in
+    url |> String.split_on_char '~'
+    |> List.map (function "TG_TOKEN" -> token | x -> x)
+    |> List.fold_left ( ^ ) ""
+
+  let attach_fetch_effect env (w0 : Io.world) : Io.world =
+    let perform (w2 : Io.world) (p : Yojson.Safe.t)
+        (callback : _ -> Yojson.Safe.t -> unit) =
+      let module U = Yojson.Safe.Util in
+      match p |> U.member "name" |> U.to_string with
+      | "fetch" ->
+          let url, props =
+            p |> U.member "in" |> fetch_params_of_yojson |> Result.get_ok
+          in
+
+          let url = fix_url env url in
+          Js.Unsafe.fun_call Js.Unsafe.global##.fetch
+            [|
+              Js.Unsafe.inject url;
+              props |> Yojson.Safe.to_string |> Js.string |> Json.unsafe_input;
+            |]
+          |> Promise.then_ ~fulfilled:(fun x -> x##text)
+          |> Promise.then_ ~fulfilled:(fun x ->
+                 callback w2 (fetch_result_to_yojson (Ok x));
+                 Promise.return ())
+          |> ignore
+      | _ -> w0.perform w2 p callback
+    in
+    { perform }
 end

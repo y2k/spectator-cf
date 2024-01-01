@@ -1,33 +1,28 @@
 open Effects
 
 let send_telegram_mesage user_id response_msg =
-  Effect.perform
-    (Fetch
-       ( "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
-         `Assoc
-           [
-             ( "body",
-               `String
-                 (`Assoc
-                    [
-                      ("chat_id", `String user_id);
-                      ("text", `String response_msg);
-                    ]
-                 |> Yojson.Safe.to_string) );
-             ("method", `String "POST");
-             ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
-           ] ))
+  Db.fetch
+    ( "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+      `Assoc
+        [
+          ( "body",
+            `String
+              (`Assoc
+                 [
+                   ("chat_id", `String user_id); ("text", `String response_msg);
+                 ]
+              |> Yojson.Safe.to_string) );
+          ("method", `String "POST");
+          ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
+        ] )
 
 let handle_ls_command user_id =
   let open Io.Syntax in
   let+ new_subs, subs =
     Io.combine2
-      (Effect.perform
-         (QueryDbFx
-            ("SELECT * FROM new_subscriptions WHERE user_id = ?", [ user_id ])))
-      (Effect.perform
-         (QueryDbFx
-            ("SELECT * FROM subscriptions WHERE user_id = ?", [ user_id ])))
+      (Db.query
+         ("SELECT * FROM new_subscriptions WHERE user_id = ?", [ user_id ]))
+      (Db.query ("SELECT * FROM subscriptions WHERE user_id = ?", [ user_id ]))
   in
   let response_msg =
     match new_subs @ subs with
@@ -47,10 +42,9 @@ let handle_add_command user_id url =
   let response_msg = "Subscription added" in
   let content = `Assoc [ ("url", `String url) ] |> Yojson.Safe.to_string in
   let f1 =
-    Effect.perform
-      (QueryDbFx
-         ( "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
-           [ user_id; content ] ))
+    Db.query
+      ( "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
+        [ user_id; content ] )
   in
   let f2 = send_telegram_mesage user_id response_msg in
   Io.combine2 f1 f2 |> Io.ignore |> Io.pure
@@ -79,12 +73,12 @@ let handle_message message =
 let handle_fetch request env =
   let open Promise.Syntax in
   let* (text : string) = request##text in
-  let effect : unit Io.t Io.t =
-    Effects.RealEffectHandlers.with_effect env handle_message text
-  in
+  let effect = handle_message text in
   Promise.make (fun ~resolve ~reject:_ ->
-      effect.f { log = []; perform = Io.unhandled } (fun w e2 ->
-          e2.f w (fun w _ ->
-              `List (w.log |> List.rev)
-              |> Yojson.Safe.pretty_to_string |> print_endline;
-              resolve ())))
+      let w : Io.world =
+        { perform = Io.unhandled }
+        |> RealEffectHandlers.attach_db_effect env
+        |> RealEffectHandlers.attach_fetch_effect env
+        |> RealEffectHandlers.attach_log_effect
+      in
+      effect.f w (fun w e2 -> e2.f w (fun _ () -> resolve ())))

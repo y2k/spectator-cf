@@ -33,7 +33,7 @@ module Intergration_tests = struct
       if result <> 0 then failwith log
   end
 
-  let assert_ sample_file_name actual =
+  let _assert sample_file_name actual =
     if sample_exists sample_file_name then (
       let expected = read_sample sample_file_name in
       if expected <> actual then
@@ -43,212 +43,71 @@ module Intergration_tests = struct
     else write_sample sample_file_name actual
 end
 
-let () =
-  let test name =
-    let actual =
-      Intergration_tests.read_sample name |> Lib.Handler_subscription.is_atom
-    in
-    if not actual then failwith @@ name ^ " not RSS/ATOM"
-  in
-  test "ac4694860f4a642899c6f147141d3a89"
-
-module IoSample2 = struct
-  open Effect.Deep
-  open Js_of_ocaml
-  open Lib.Effects
-
-  let rec with_effect : 'a 'b. _ -> _ -> ('a -> 'b) -> 'a -> 'b =
-   fun effects_log query_stage f x ->
-    try_with f x
-      {
-        effc =
-          (fun (type a) (eff : a Effect.t) ->
-            match eff with
-            | QueryDbFx query ->
-                let query_id = Hashtbl.hash query |> string_of_int in
-                let content =
-                  Intergration_tests.read_sample
-                    (query_id ^ "." ^ query_stage ^ ".query.json")
-                  |> Yojson.Safe.from_string
-                in
-                let result = match content with `List xs -> xs | x -> [ x ] in
-                Some
-                  (fun (k : (a, _) continuation) ->
-                    continue k
-                      {
-                        f =
-                          (fun w callback ->
-                            Dom_html.setTimeout
-                              (fun () ->
-                                effects_log :=
-                                  `Assoc
-                                    [
-                                      ( "query",
-                                        Lib.Effects.query_params_to_yojson query
-                                      );
-                                    ]
-                                  :: !effects_log;
-                                with_effect effects_log query_stage (callback w)
-                                  result)
-                              10.0
-                            |> ignore);
-                      })
-            | Fetch params ->
-                Some
-                  (fun (k : (a, _) continuation) ->
-                    continue k
-                      {
-                        f =
-                          (fun w callback ->
-                            Dom_html.setTimeout
-                              (fun () ->
-                                effects_log :=
-                                  `Assoc
-                                    [
-                                      ( "fetch",
-                                        Lib.Effects.fetch_params_to_yojson
-                                          params );
-                                    ]
-                                  :: !effects_log;
-                                with_effect effects_log query_stage (callback w)
-                                  (Ok ""))
-                              10.0
-                            |> ignore);
-                      })
-            | _ -> None);
-      }
-
-  let reduce f = function
-    | x :: xs -> xs |> List.fold_left f x
-    | _ -> failwith "List is empty"
-
-  let get_actual_effects_log effects_log =
-    !effects_log |> List.rev
-    |> (function [ x ] -> x | xs -> `List xs)
-    |> Yojson.Safe.pretty_to_string
-
-  let assert_ sample stage =
-    let effects_log = ref [] in
-    let msg = Intergration_tests.read_sample sample in
-    let effect : unit Io.t Io.t =
-      with_effect effects_log stage Lib.Handler_bot.handle_message msg
-    in
-    effect.f { log = []; perform = Io.unhandled } (fun w e2 ->
-        e2.f w (fun _w _ ->
-            get_actual_effects_log effects_log
-            |> Intergration_tests.assert_ ("expected." ^ sample)))
-
-  let () = assert_ "sample1.json" "1"
-  let () = assert_ "sample2.json" "1"
-  let () = assert_ "sample3.json" "2"
-  let () = assert_ "sample4.json" "1"
-end
-
-module XmlTests = struct
-  let () =
-    Intergration_tests.read_sample "ac4694860f4a642899c6f147141d3a89"
-    |> Xml.parse_string |> Xml.children
-    |> List.filter (fun x -> Xml.tag x = "entry")
-    |> List.length |> string_of_int |> ignore;
-    ()
-end
-
 module ScheduleTests = struct
-  open Effect.Deep
   open Lib.Effects
   module U = Yojson.Safe.Util
 
-  let attach_debug_query_effect (log : Yojson.Safe.t list ref) (w0 : Io.world) =
-    {
-      w0 with
-      perform =
-        (fun w p callback ->
-          match p |> U.member "name" |> U.to_string with
-          | "database" ->
-              let entity = List.hd !log in
-              log := List.tl !log;
-              let params =
-                p |> U.member "in" |> query_params_of_yojson
-                |> Result.fold ~ok:Fun.id ~error:(fun _ -> failwith __LOC__)
-              in
-              if "database" <> (U.member "name" entity |> U.to_string) then
-                failwith __LOC__;
-              if params |> query_params_to_yojson <> U.member "in" entity then
-                failwith __LOC__;
-              let result = U.member "out" entity in
-              callback w result
-          | _ -> w0.perform w p callback);
-    }
+  let rec load_files (entity : Yojson.Safe.t) =
+    match entity with
+    | `String x when String.starts_with x ~prefix:"md5:" ->
+        `String
+          (String.sub x 4 (String.length x - 4)
+          |> Intergration_tests.read_sample)
+    | `List xs -> `List (xs |> List.map load_files)
+    | `Assoc xs -> `Assoc (xs |> List.map (fun (k, v) -> (k, load_files v)))
+    | x -> x
 
-  let attach_debug_fetch_effect (log : Yojson.Safe.t list ref) (w0 : Io.world) =
-    {
-      w0 with
-      perform =
-        (fun w p callback ->
-          match p |> U.member "name" |> U.to_string with
-          | "fetch" ->
-              let entity = List.hd !log in
-              log := List.tl !log;
-              let params =
-                p |> U.member "in" |> fetch_params_of_yojson
-                |> Result.fold ~ok:Fun.id ~error:(fun _ -> failwith __LOC__)
-              in
-              if "fetch" <> (U.member "name" entity |> U.to_string) then
-                failwith __LOC__;
-              if params |> fetch_params_to_yojson <> U.member "in" entity then
-                failwith __LOC__;
-              let result = U.member "out" entity in
-              callback w result
-          | _ -> w0.perform w p callback);
-    }
+  let pretty_to_string_ex json =
+    let rec expand_json = function
+      | `String x when String.starts_with ~prefix:"{" x ->
+          `Assoc [ ("<JSON>", Yojson.Safe.from_string x) ]
+      | `List xs -> `List (List.map expand_json xs)
+      | `Assoc xs -> `Assoc (List.map (fun (k, v) -> (k, expand_json v)) xs)
+      | x -> x
+    in
+    json |> expand_json |> Yojson.Safe.pretty_to_string
 
-  let test log_name =
+  let debug_effect (log : Yojson.Safe.t list ref) w p callback =
+    let entity = List.hd !log in
+    log := List.tl !log;
+    let entity_without_out =
+      `Assoc (entity |> Yojson.Safe.Util.to_assoc |> List.remove_assoc "out")
+    in
+    if p <> entity_without_out then (
+      print_endline @@ "=== Actual ===\n" ^ pretty_to_string_ex p;
+      print_endline @@ "=== Expected ===\n"
+      ^ pretty_to_string_ex entity_without_out;
+      failwith __LOC__);
+    U.member "out" entity |> load_files |> callback w
+
+  let test log_name (task : unit Io.t) =
     let log =
       Intergration_tests.read_sample log_name
       |> Yojson.Safe.from_string |> Yojson.Safe.Util.to_list |> ref
     in
-    let rec run_effect : 'a 'b. ('a -> 'b) -> 'a -> 'b =
-     fun f x ->
-      try_with f x
-        {
-          effc =
-            (fun (type a) (eff : a Effect.t) ->
-              let entity = List.hd !log in
-              log := List.tl !log;
-              match eff with
-              (* | QueryDbFx params ->
-                  if "database" <> (U.member "name" entity |> U.to_string) then
-                    failwith __LOC__;
-                  if params |> query_params_to_yojson <> U.member "in" entity
-                  then failwith __LOC__;
-                  let result =
-                    U.member "out" entity |> query_result_of_yojson
-                    |> Result.get_ok
-                  in
-                  Some
-                    (fun (k : (a, _) continuation) ->
-                      continue k { f = (fun w c -> run_effect (c w) result) }) *)
-              | Fetch params ->
-                  if "fetch" <> (U.member "name" entity |> U.to_string) then
-                    failwith __LOC__;
-                  if params |> fetch_params_to_yojson <> U.member "in" entity
-                  then failwith __LOC__;
-                  let result =
-                    U.member "out" entity |> fetch_result_of_yojson
-                    |> Result.get_ok
-                  in
-                  Some
-                    (fun (k : (a, _) continuation) ->
-                      continue k { f = (fun w c -> run_effect (c w) result) })
-              | _ -> None);
-        }
-    in
-    let ef = run_effect Lib.Handler_subscription.handle_ () in
+    let ef = task in
     ef.f
-      ({ Io.log = []; perform = Lib.Effects.Io.unhandled }
-      |> attach_debug_query_effect log
-      |> attach_debug_fetch_effect log)
-      (fun _w _x -> print_endline "END")
+      { perform = debug_effect log }
+      (fun _w _x ->
+        let count = List.length !log in
+        if count > 0 then (
+          prerr_endline @@ "[ERROR] is not empty: "
+          ^ (`List !log |> Yojson.Safe.pretty_to_string);
+          failwith "[ERROR]" |> ignore))
 
-  let () = test "schedule1.json"
+  let test_bot input effects =
+    let io =
+      let open Io.Syntax in
+      let* x =
+        Intergration_tests.read_sample input |> Lib.Handler_bot.handle_message
+      in
+      x
+    in
+    test effects io
+
+  let () = test_bot "sample1.json" "bot1.json"
+  let () = test_bot "sample2.json" "bot2.json"
+  let () = test_bot "sample3.json" "bot3.json"
+  let () = test_bot "sample4.json" "bot4.json"
+  let () = test "schedule1.json" Lib.Handler_subscription.handle_
 end

@@ -1,0 +1,19 @@
+[
+    {
+        "name": "fetch",
+        "in": [
+            "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+            {
+                "body": "{\"chat_id\":\"241854720\",\"text\":\"/ls - list of subscription\\n/add - add new subscription\"}",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            }
+        ],
+        "out": [
+            "Ok",
+            "{\"ok\":true,\"result\":{\"message_id\":5721,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704132013,\"text\":\"/ls - list of subscription\\n/add - add new subscription\",\"entities\":[{\"offset\":0,\"length\":3,\"type\":\"bot_command\"},{\"offset\":27,\"length\":4,\"type\":\"bot_command\"}]}}"
+        ]
+    }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "name": "database",
+    "in": [
+      "SELECT * FROM new_subscriptions WHERE user_id = ?",
+      [
+        "241854720"
+      ]
+    ],
+    "out": []
+  },
+  {
+    "name": "database",
+    "in": [
+      "SELECT * FROM subscriptions WHERE user_id = ?",
+      [
+        "241854720"
+      ]
+    ],
+    "out": []
+  },
+  {
+    "name": "fetch",
+    "in": [
+      "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+      {
+        "body": "{\"chat_id\":\"241854720\",\"text\":\"No subscriptions\"}",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    ],
+    "out": [
+      "Ok",
+      "{\"ok\":true,\"result\":{\"message_id\":5718,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704131792,\"text\":\"No subscriptions\"}}"
+    ]
+  }
+]
