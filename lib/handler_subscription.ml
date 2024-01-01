@@ -18,19 +18,14 @@ let get_ids new_subs =
 
 (* ================================== *)
 
-let get_new_subs = Db.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
+let get_new_subs = Effects.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
 
 let get_new_sub_contents new_subs =
   get_ids new_subs
-  |> List.map (fun (_, _, url) -> Db.fetch (url, `Assoc []))
+  |> List.map (fun (_, _, url) -> Effects.fetch (url, `Assoc []))
   |> Io.combine
 
 let save_subs new_subs contents =
-  (* print_endline @@ "[LOG] save_subs.new_subs: "
-     ^ (`List new_subs |> Yojson.Safe.pretty_to_string);
-     print_endline @@ "[LOG] save_subs.contents: "
-     ^ (`List (List.map fetch_result_to_yojson contents)
-       |> Yojson.Safe.pretty_to_string); *)
   let rss_list =
     List.map2
       (fun (id, user_id, url) result ->
@@ -42,7 +37,7 @@ let save_subs new_subs contents =
   in
   (rss_list
   |> List.map (fun (id, _, _) ->
-         Db.query
+         Effects.query
            ("DELETE FROM new_subscriptions WHERE id = ?", [ string_of_int id ]))
   )
   @ (rss_list
@@ -51,7 +46,7 @@ let save_subs new_subs contents =
              `Assoc [ ("type", `String rss_type); ("url", `String url) ]
              |> Yojson.Safe.to_string
            in
-           Db.query
+           Effects.query
              ( "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
                [ user_id; content ] )))
   |> Io.combine
@@ -69,9 +64,8 @@ let handle env =
   let effect : unit Io.t = handle_ in
   Promise.make (fun ~resolve ~reject:_ ->
       let w : Io.world =
-        { perform = Io.unhandled }
-        |> RealEffectHandlers.attach_db_effect env
-        |> RealEffectHandlers.attach_fetch_effect env
-        |> RealEffectHandlers.attach_log_effect
+        { perform = Io.unhandled } |> Impl.attach_db_effect env
+        |> Impl.attach_fetch_effect env
+        |> Impl.attach_log_effect
       in
       effect.f w (fun _ () -> resolve ()))

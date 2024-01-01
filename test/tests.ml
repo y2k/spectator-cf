@@ -67,18 +67,22 @@ module ScheduleTests = struct
     in
     json |> expand_json |> Yojson.Safe.pretty_to_string
 
-  let debug_effect (log : Yojson.Safe.t list ref) w p callback =
-    let entity = List.hd !log in
-    log := List.tl !log;
-    let entity_without_out =
-      `Assoc (entity |> Yojson.Safe.Util.to_assoc |> List.remove_assoc "out")
-    in
-    if p <> entity_without_out then (
-      print_endline @@ "=== Actual ===\n" ^ pretty_to_string_ex p;
-      print_endline @@ "=== Expected ===\n"
-      ^ pretty_to_string_ex entity_without_out;
-      failwith __LOC__);
-    U.member "out" entity |> load_files |> callback w
+  let debug_effect (log : Yojson.Safe.t list ref) p =
+    {
+      Io.f =
+        (fun w callback ->
+          let entity = List.hd !log in
+          log := List.tl !log;
+          let entity_without_out =
+            `Assoc
+              (entity |> Yojson.Safe.Util.to_assoc |> List.remove_assoc "out")
+          in
+          if p <> entity_without_out then
+            Intergration_tests.TextComparer.compare_2_txt __LOC__
+              (pretty_to_string_ex entity_without_out)
+              (pretty_to_string_ex p);
+          U.member "out" entity |> load_files |> callback w);
+    }
 
   let test log_name (task : unit Io.t) =
     let log =
@@ -95,19 +99,9 @@ module ScheduleTests = struct
           ^ (`List !log |> Yojson.Safe.pretty_to_string);
           failwith "[ERROR]" |> ignore))
 
-  let test_bot input effects =
-    let io =
-      let open Io.Syntax in
-      let* x =
-        Intergration_tests.read_sample input |> Lib.Handler_bot.handle_message
-      in
-      x
-    in
-    test effects io
-
-  let () = test_bot "sample1.json" "bot1.json"
-  let () = test_bot "sample2.json" "bot2.json"
-  let () = test_bot "sample3.json" "bot3.json"
-  let () = test_bot "sample4.json" "bot4.json"
+  let () = test "bot1.json" Lib.Handler_bot.handle_message
+  let () = test "bot2.json" Lib.Handler_bot.handle_message
+  let () = test "bot3.json" Lib.Handler_bot.handle_message
+  let () = test "bot4.json" Lib.Handler_bot.handle_message
   let () = test "schedule1.json" Lib.Handler_subscription.handle_
 end

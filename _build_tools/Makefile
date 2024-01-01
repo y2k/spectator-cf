@@ -4,4 +4,7 @@ run:
 db:
 	wrangler d1 execute SPECTATOR_DB --local --file=schema.sql
 
-.PHONY: run db
+test:
+	(cd .. && clear && dune build && clear && dune test -f)
+
+.PHONY: run db test

@@ -1,7 +1,7 @@
 open Effects
 
 let send_telegram_mesage user_id response_msg =
-  Db.fetch
+  Effects.fetch
     ( "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
       `Assoc
         [
@@ -18,11 +18,12 @@ let send_telegram_mesage user_id response_msg =
 
 let handle_ls_command user_id =
   let open Io.Syntax in
-  let+ new_subs, subs =
+  let* new_subs, subs =
     Io.combine2
-      (Db.query
+      (Effects.query
          ("SELECT * FROM new_subscriptions WHERE user_id = ?", [ user_id ]))
-      (Db.query ("SELECT * FROM subscriptions WHERE user_id = ?", [ user_id ]))
+      (Effects.query
+         ("SELECT * FROM subscriptions WHERE user_id = ?", [ user_id ]))
   in
   let response_msg =
     match new_subs @ subs with
@@ -42,12 +43,12 @@ let handle_add_command user_id url =
   let response_msg = "Subscription added" in
   let content = `Assoc [ ("url", `String url) ] |> Yojson.Safe.to_string in
   let f1 =
-    Db.query
+    Effects.query
       ( "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
         [ user_id; content ] )
   in
   let f2 = send_telegram_mesage user_id response_msg in
-  Io.combine2 f1 f2 |> Io.ignore |> Io.pure
+  Io.combine2 f1 f2 |> Io.ignore
 
 type message_from = { id : int } [@@deriving yojson { strict = false }]
 
@@ -56,9 +57,10 @@ type message = { text : string; from : message_from }
 
 type message_upd = { message : message } [@@deriving yojson { strict = false }]
 
-let handle_message message =
-  let msg_model = message |> Yojson.Safe.from_string |> message_upd_of_yojson in
-  match msg_model with
+let handle_message =
+  let open Io.Syntax in
+  let* message = Effects.read_const in
+  message |> Yojson.Safe.from_string |> message_upd_of_yojson |> function
   | Ok msg_model -> (
       let user_id = string_of_int msg_model.message.from.id in
       match String.split_on_char ' ' msg_model.message.text with
@@ -67,18 +69,17 @@ let handle_message message =
       | _ ->
           send_telegram_mesage user_id
             "/ls - list of subscription\n/add - add new subscription"
-          |> Io.ignore |> Io.pure)
+          |> Io.ignore)
   | Error _e -> failwith __LOC__
 
 let handle_fetch request env =
   let open Promise.Syntax in
   let* (text : string) = request##text in
-  let effect = handle_message text in
   Promise.make (fun ~resolve ~reject:_ ->
       let w : Io.world =
-        { perform = Io.unhandled }
-        |> RealEffectHandlers.attach_db_effect env
-        |> RealEffectHandlers.attach_fetch_effect env
-        |> RealEffectHandlers.attach_log_effect
+        { perform = Io.unhandled } |> Impl.attach_db_effect env
+        |> Impl.attach_fetch_effect env
+        |> Impl.attach_const_effect text
+        |> Impl.attach_log_effect
       in
-      effect.f w (fun w e2 -> e2.f w (fun _ () -> resolve ())))
+      handle_message.f w (fun _ -> resolve))

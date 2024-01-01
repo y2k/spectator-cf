@@ -1,11 +1,15 @@
 [
     {
+        "name": "const",
+        "out": "{    \"update_id\": 569125638,    \"message\": {        \"message_id\": 5596,        \"from\": {            \"id\": 241854720,            \"is_bot\": false,            \"first_name\": \"Igor\",            \"username\": \"angmarr\",            \"language_code\": \"en\"        },        \"chat\": {            \"id\": 241854720,            \"first_name\": \"Igor\",            \"username\": \"angmarr\",            \"type\": \"private\"        },        \"date\": 1703017762,        \"text\": \"/add https://github.com/apple/homebrew-apple/commits/main.atom\",        \"entities\": [            {                \"offset\": 0,                \"length\": 4,                \"type\": \"bot_command\"            },            {                \"offset\": 5,                \"length\": 14,                \"type\": \"url\"            }        ]    }}"
+    },
+    {
         "name": "database",
         "in": [
             "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
             [
                 "241854720",
-                "{\"url\":\"https://g.com/\"}"
+                "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\"}"
             ]
         ],
         "out": []
@@ -24,7 +28,7 @@
         ],
         "out": [
             "Ok",
-            "{\"ok\":true,\"result\":{\"message_id\":5719,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704131833,\"text\":\"Subscription added\"}}"
+            "{\"ok\":true,\"result\":{\"message_id\":5733,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704147438,\"text\":\"Subscription added\"}}"
         ]
     }
 ]
