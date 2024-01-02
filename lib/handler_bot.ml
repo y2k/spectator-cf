@@ -57,7 +57,7 @@ type message = { text : string; from : message_from }
 
 type message_upd = { message : message } [@@deriving yojson { strict = false }]
 
-let handle_message =
+let handle =
   let open Io.Syntax in
   let* message = Effects.read_const in
   message |> Yojson.Safe.from_string |> message_upd_of_yojson |> function
@@ -71,15 +71,3 @@ let handle_message =
             "/ls - list of subscription\n/add - add new subscription"
           |> Io.ignore)
   | Error _e -> failwith __LOC__
-
-let handle_fetch request env =
-  let open Promise.Syntax in
-  let* (text : string) = request##text in
-  Promise.make (fun ~resolve ~reject:_ ->
-      let w : Io.world =
-        { perform = Io.unhandled } |> Impl.attach_db_effect env
-        |> Impl.attach_fetch_effect env
-        |> Impl.attach_const_effect text
-        |> Impl.attach_log_effect
-      in
-      handle_message.f w (fun _ -> resolve))

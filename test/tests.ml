@@ -99,9 +99,9 @@ module ScheduleTests = struct
           ^ (`List !log |> Yojson.Safe.pretty_to_string);
           failwith "[ERROR]" |> ignore))
 
-  let () = test "bot1.json" Lib.Handler_bot.handle_message
-  let () = test "bot2.json" Lib.Handler_bot.handle_message
-  let () = test "bot3.json" Lib.Handler_bot.handle_message
-  let () = test "bot4.json" Lib.Handler_bot.handle_message
-  let () = test "schedule1.json" Lib.Handler_subscription.handle_
+  let () = test "bot1.json" Lib.Handler_bot.handle
+  let () = test "bot2.json" Lib.Handler_bot.handle
+  let () = test "bot3.json" Lib.Handler_bot.handle
+  let () = test "bot4.json" Lib.Handler_bot.handle
+  let () = test "schedule1.json" Lib.Handler_subscription.handle
 end

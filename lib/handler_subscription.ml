@@ -16,8 +16,6 @@ let get_ids new_subs =
          in
          (id, user_id, url))
 
-(* ================================== *)
-
 let get_new_subs = Effects.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
 
 let get_new_sub_contents new_subs =
@@ -51,21 +49,9 @@ let save_subs new_subs contents =
                [ user_id; content ] )))
   |> Io.combine
 
-(* ================================== *)
-
-let handle_ =
+let handle =
   let open Io.Syntax in
   let* new_subs = get_new_subs in
   let* rss_list = get_new_sub_contents new_subs in
   let* _ = save_subs new_subs rss_list in
   Io.pure ()
-
-let handle env =
-  let effect : unit Io.t = handle_ in
-  Promise.make (fun ~resolve ~reject:_ ->
-      let w : Io.world =
-        { perform = Io.unhandled } |> Impl.attach_db_effect env
-        |> Impl.attach_fetch_effect env
-        |> Impl.attach_log_effect
-      in
-      effect.f w (fun _ () -> resolve ()))
