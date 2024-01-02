@@ -16,11 +16,11 @@ let get_ids new_subs =
          let user_id = content |> U.member "user_id" |> U.to_string in
          (id, user_id, url))
 
-let get_new_subs = Effects.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
+let get_new_subs = Effects.query "SELECT * FROM new_subscriptions LIMIT 5" []
 
 let get_new_sub_contents new_subs =
   get_ids new_subs
-  |> List.map (fun (_, _, url) -> Effects.fetch (url, `Assoc []))
+  |> List.map (fun (_, _, url) -> Effects.fetch url (`Assoc []))
   |> Io.combine
 
 let save_subs new_subs contents =
@@ -35,9 +35,8 @@ let save_subs new_subs contents =
   in
   (rss_list
   |> List.map (fun (id, _, _) ->
-         Effects.query
-           ("DELETE FROM new_subscriptions WHERE id = ?", [ string_of_int id ]))
-  )
+         Effects.query "DELETE FROM new_subscriptions WHERE id = ?"
+           [ string_of_int id ]))
   @ (rss_list
     |> List.map (fun (_, user_id, url) ->
            let content =
@@ -49,8 +48,8 @@ let save_subs new_subs contents =
                ]
              |> Yojson.Safe.to_string
            in
-           Effects.query
-             ("INSERT INTO subscriptions (content) VALUES (?)", [ content ])))
+           Effects.query "INSERT INTO subscriptions (content) VALUES (?)"
+             [ content ]))
   |> Io.combine
 
 let handle =

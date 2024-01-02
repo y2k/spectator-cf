@@ -2,31 +2,27 @@ open Effects
 
 (* Move to common *)
 let send_telegram_mesage user_id response_msg =
-  Effects.fetch
-    ( "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
-      `Assoc
-        [
-          ( "body",
-            `String
-              (`Assoc
-                 [
-                   ("chat_id", `String user_id); ("text", `String response_msg);
-                 ]
-              |> Yojson.Safe.to_string) );
-          ("method", `String "POST");
-          ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
-        ] )
+  Effects.fetch "https://api.telegram.org/bot~TG_TOKEN~/sendMessage"
+    (`Assoc
+      [
+        ( "body",
+          `String
+            (`Assoc
+               [ ("chat_id", `String user_id); ("text", `String response_msg) ]
+            |> Yojson.Safe.to_string) );
+        ("method", `String "POST");
+        ("headers", `Assoc [ ("Content-Type", `String "application/json") ]);
+      ])
 
 let handle_ls_command user_id =
   let open Io.Syntax in
   let* new_subs, subs =
     Io.combine2
       (Effects.query
-         ( "SELECT * FROM new_subscriptions WHERE content->>'user_id' = ?",
-           [ user_id ] ))
-      (Effects.query
-         ( "SELECT * FROM subscriptions WHERE content->>'user_id' = ?",
-           [ user_id ] ))
+         "SELECT * FROM new_subscriptions WHERE content->>'user_id' = ?"
+         [ user_id ])
+      (Effects.query "SELECT * FROM subscriptions WHERE content->>'user_id' = ?"
+         [ user_id ])
   in
   let response_msg =
     match new_subs @ subs with
@@ -57,8 +53,8 @@ let handle_add_command user_id url =
     |> Yojson.Safe.to_string
   in
   let f1 =
-    Effects.query
-      ("INSERT INTO new_subscriptions (content) VALUES (?)", [ content ])
+    Effects.query "INSERT INTO new_subscriptions (content) VALUES (?)"
+      [ content ]
   in
   let f2 = send_telegram_mesage user_id response_msg in
   Io.combine2 f1 f2 |> Io.ignore

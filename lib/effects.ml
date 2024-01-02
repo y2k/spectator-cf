@@ -66,21 +66,26 @@ let fetch_result_of_yojson (json : Yojson.Safe.t) =
   json |> [%of_yojson: [ `Ok of string | `Error of string ]]
   |> Result.map (fun x -> match x with `Ok x -> Ok x | `Error x -> Error x)
 
-let query (params : query_params) : query_result Io.t =
+let query (sql : string) (params : string list) : Yojson.Safe.t list Io.t =
   let open Io.Syntax in
   let* w = Io.resolve_world in
   let+ result =
     `Assoc
-      [ ("name", `String "database"); ("in", query_params_to_yojson params) ]
+      [
+        ("name", `String "database");
+        ("in", query_params_to_yojson (sql, params));
+      ]
     |> w.perform
   in
   result |> query_result_of_yojson |> Result.get_ok
 
-let fetch (params : fetch_params) : fetch_result Io.t =
+let fetch (url : string) (props : Yojson.Safe.t) : (string, string) result Io.t
+    =
   let open Io.Syntax in
   let* w = Io.resolve_world in
   let+ result =
-    `Assoc [ ("name", `String "fetch"); ("in", fetch_params_to_yojson params) ]
+    `Assoc
+      [ ("name", `String "fetch"); ("in", fetch_params_to_yojson (url, props)) ]
     |> w.perform
   in
   result |> fetch_result_of_yojson |> Result.get_ok
