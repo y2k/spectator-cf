@@ -99,13 +99,21 @@ module Impl = struct
     }
 
   let attach_log_effect (w : Io.world) : Io.world =
+    let rec pretty_to_string_ex = function
+      | `String x when String.length x > 512 ->
+          `String ("md5:" ^ (Digest.string x |> Digest.to_hex))
+      | `List xs -> `List (List.map pretty_to_string_ex xs)
+      | `Assoc xs ->
+          `Assoc (List.map (fun (k, v) -> (k, pretty_to_string_ex v)) xs)
+      | x -> x
+    in
     {
       perform =
         (fun p ->
           let open Io.Syntax in
           let+ result = w.perform p in
           let log_p = p |> Yojson.Safe.Util.to_assoc in
-          let log_result = result in
+          let log_result = pretty_to_string_ex result in
           `Assoc (log_p @ [ ("out", log_result) ])
           |> Yojson.Safe.pretty_to_string |> print_endline;
           result);
@@ -138,8 +146,12 @@ module Impl = struct
             f =
               (fun w2 callback ->
                 execute_sql q ps
-                |> Promise.then_ ~fulfilled:(fun x ->
+                |> Promise.then_
+                     ~fulfilled:(fun x ->
                        callback w2 (`List x);
+                       Promise.return ())
+                     ~rejected:(fun _x ->
+                       prerr_endline @@ "[DB] ERROR " ^ __LOC__;
                        Promise.return ())
                 |> ignore);
           }

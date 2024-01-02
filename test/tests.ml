@@ -67,7 +67,7 @@ module ScheduleTests = struct
     in
     json |> expand_json |> Yojson.Safe.pretty_to_string
 
-  let debug_effect (log : Yojson.Safe.t list ref) p =
+  let debug_effect prefix (log : Yojson.Safe.t list ref) p =
     {
       Io.f =
         (fun w callback ->
@@ -78,7 +78,8 @@ module ScheduleTests = struct
               (entity |> Yojson.Safe.Util.to_assoc |> List.remove_assoc "out")
           in
           if p <> entity_without_out then
-            Intergration_tests.TextComparer.compare_2_txt __LOC__
+            Intergration_tests.TextComparer.compare_2_txt
+              (prefix ^ " " ^ __LOC__)
               (pretty_to_string_ex entity_without_out)
               (pretty_to_string_ex p);
           U.member "out" entity |> load_files |> callback w);
@@ -91,7 +92,7 @@ module ScheduleTests = struct
     in
     let ef = task in
     ef.f
-      { perform = debug_effect log }
+      { perform = debug_effect log_name log }
       (fun _w _x ->
         let count = List.length !log in
         if count > 0 then (
@@ -103,5 +104,6 @@ module ScheduleTests = struct
   let () = test "bot2.json" Lib.Handler_bot.handle
   let () = test "bot3.json" Lib.Handler_bot.handle
   let () = test "bot4.json" Lib.Handler_bot.handle
+  let () = test "bot5.json" Lib.Handler_bot.handle
   let () = test "schedule1.json" Lib.Handler_subscription.handle
 end

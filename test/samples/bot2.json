@@ -1,15 +1,14 @@
 [
     {
         "name": "const",
-        "out": "{    \"update_id\": 569125638,    \"message\": {        \"message_id\": 5596,        \"from\": {            \"id\": 241854720,            \"is_bot\": false,            \"first_name\": \"Igor\",            \"username\": \"angmarr\",            \"language_code\": \"en\"        },        \"chat\": {            \"id\": 241854720,            \"first_name\": \"Igor\",            \"username\": \"angmarr\",            \"type\": \"private\"        },        \"date\": 1703017762,        \"text\": \"/add https://github.com/apple/homebrew-apple/commits/main.atom\",        \"entities\": [            {                \"offset\": 0,                \"length\": 4,                \"type\": \"bot_command\"            },            {                \"offset\": 5,                \"length\": 14,                \"type\": \"url\"            }        ]    }}"
+        "out": "{\"update_id\":569125716,\n\"message\":{\"message_id\":5752,\"from\":{\"id\":241854720,\"is_bot\":false,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"language_code\":\"en\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704202108,\"text\":\"/add https://github.com/apple/homebrew-apple/commits/main.atom\",\"entities\":[{\"offset\":0,\"length\":4,\"type\":\"bot_command\"},{\"offset\":5,\"length\":57,\"type\":\"url\"}],\"link_preview_options\":{\"is_disabled\":true}}}"
     },
     {
         "name": "database",
         "in": [
-            "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
+            "INSERT INTO new_subscriptions (content) VALUES (?)",
             [
-                "241854720",
-                "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\"}"
+                "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\",\"user_id\":\"241854720\"}"
             ]
         ],
         "out": []
@@ -28,7 +27,7 @@
         ],
         "out": [
             "Ok",
-            "{\"ok\":true,\"result\":{\"message_id\":5733,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704147438,\"text\":\"Subscription added\"}}"
+            "{\"ok\":true,\"result\":{\"message_id\":5753,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704202108,\"text\":\"Subscription added\"}}"
         ]
     }
 ]

@@ -1,0 +1,53 @@
+[
+    {
+        "name": "const",
+        "out": "{\"update_id\":569125722,\n\"message\":{\"message_id\":5764,\"from\":{\"id\":241854720,\"is_bot\":false,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"language_code\":\"en\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704202344,\"text\":\"/ls\",\"entities\":[{\"offset\":0,\"length\":3,\"type\":\"bot_command\"}]}}"
+    },
+    {
+        "name": "database",
+        "in": [
+            "SELECT * FROM new_subscriptions WHERE content->>'user_id' = ?",
+            [
+                "241854720"
+            ]
+        ],
+        "out": [
+            {
+                "id": 2,
+                "content": "{\"url\":\"https://g.com/\",\"user_id\":\"241854720\"}"
+            }
+        ]
+    },
+    {
+        "name": "database",
+        "in": [
+            "SELECT * FROM subscriptions WHERE content->>'user_id' = ?",
+            [
+                "241854720"
+            ]
+        ],
+        "out": [
+            {
+                "id": 1,
+                "content": "{\"type\":\"b18036ba-0838-437a-8925-7524cf8b07b9\",\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\",\"user_id\":\"241854720\"}"
+            }
+        ]
+    },
+    {
+        "name": "fetch",
+        "in": [
+            "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
+            {
+                "body": "{\"chat_id\":\"241854720\",\"text\":\"Subscriptions:\\n- https://g.com/ […]\\n- https://github.com/apple/homebrew-apple/commits/main.atom [RSS]\"}",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            }
+        ],
+        "out": [
+            "Ok",
+            "{\"ok\":true,\"result\":{\"message_id\":5765,\"from\":{\"id\":300777612,\"is_bot\":true,\"first_name\":\"DEBUG\",\"username\":\"debug3bot\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704202344,\"text\":\"Subscriptions:\\n- https://g.com/\\n- https://github.com/apple/homebrew-apple/commits/main.atom\",\"entities\":[{\"offset\":17,\"length\":14,\"type\":\"url\"},{\"offset\":34,\"length\":57,\"type\":\"url\"}]}}"
+        ]
+    }
+]

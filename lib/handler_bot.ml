@@ -1,5 +1,6 @@
 open Effects
 
+(* Move to common *)
 let send_telegram_mesage user_id response_msg =
   Effects.fetch
     ( "https://api.telegram.org/bot~TG_TOKEN~/sendMessage",
@@ -21,9 +22,11 @@ let handle_ls_command user_id =
   let* new_subs, subs =
     Io.combine2
       (Effects.query
-         ("SELECT * FROM new_subscriptions WHERE user_id = ?", [ user_id ]))
+         ( "SELECT * FROM new_subscriptions WHERE content->>'user_id' = ?",
+           [ user_id ] ))
       (Effects.query
-         ("SELECT * FROM subscriptions WHERE user_id = ?", [ user_id ]))
+         ( "SELECT * FROM subscriptions WHERE content->>'user_id' = ?",
+           [ user_id ] ))
   in
   let response_msg =
     match new_subs @ subs with
@@ -31,21 +34,31 @@ let handle_ls_command user_id =
     | subs ->
         subs
         |> List.map (fun x ->
-               Yojson.Safe.Util.member "content" x
-               |> Yojson.Safe.Util.to_string |> Yojson.Safe.from_string
-               |> Yojson.Safe.Util.member "url"
-               |> Yojson.Safe.Util.to_string)
+               let module U = Yojson.Safe.Util in
+               let json =
+                 U.member "content" x |> U.to_string |> Yojson.Safe.from_string
+               in
+               (json |> U.member "url" |> U.to_string)
+               ^ " ["
+               ^ (json |> U.member "type" |> U.to_string_option
+                 |> Option.map (function
+                      | "b18036ba-0838-437a-8925-7524cf8b07b9" -> "RSS"
+                      | x -> x)
+                 |> Option.value ~default:"…")
+               ^ "]")
         |> List.fold_left (Printf.sprintf "%s\n- %s") "Subscriptions:"
   in
   send_telegram_mesage user_id response_msg |> Io.ignore
 
 let handle_add_command user_id url =
   let response_msg = "Subscription added" in
-  let content = `Assoc [ ("url", `String url) ] |> Yojson.Safe.to_string in
+  let content =
+    `Assoc [ ("url", `String url); ("user_id", `String user_id) ]
+    |> Yojson.Safe.to_string
+  in
   let f1 =
     Effects.query
-      ( "INSERT INTO new_subscriptions (user_id, content) VALUES (?, ?)",
-        [ user_id; content ] )
+      ("INSERT INTO new_subscriptions (content) VALUES (?)", [ content ])
   in
   let f2 = send_telegram_mesage user_id response_msg in
   Io.combine2 f1 f2 |> Io.ignore

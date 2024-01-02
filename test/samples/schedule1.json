@@ -1,36 +1,46 @@
 [
-    {
-      "name": "database",
-      "in": [ "SELECT * FROM new_subscriptions LIMIT 5", [] ],
-      "out": [
-        {
-          "id": 1,
-          "user_id": "241854720",
-          "content": "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\"}"
-        }
+  {
+    "name": "database",
+    "in": [
+      "SELECT * FROM new_subscriptions LIMIT 5",
+      []
+    ],
+    "out": [
+      {
+        "id": 1,
+        "content": "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\",\"user_id\":\"241854720\"}"
+      }
+    ]
+  },
+  {
+    "name": "fetch",
+    "in": [
+      "https://github.com/apple/homebrew-apple/commits/main.atom",
+      {}
+    ],
+    "out": [
+      "Ok",
+      "md5:ac4694860f4a642899c6f147141d3a89"
+    ]
+  },
+  {
+    "name": "database",
+    "in": [
+      "DELETE FROM new_subscriptions WHERE id = ?",
+      [
+        "1"
       ]
-    },
-    {
-      "name": "fetch",
-      "in": [
-        "https://github.com/apple/homebrew-apple/commits/main.atom", {}
-      ],
-      "out": [ "Ok", "md5:ac4694860f4a642899c6f147141d3a89" ]
-    },
-    {
-      "name": "database",
-      "in": [ "DELETE FROM new_subscriptions WHERE id = ?", [ "1" ] ],
-      "out": []
-    },
-    {
-      "name": "database",
-      "in": [
-        "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
-        [
-          "241854720",
-          "{\"type\":\"b18036ba-0838-437a-8925-7524cf8b07b9\",\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\"}"
-        ]
-      ],
-      "out": []
-    }
-  ]
+    ],
+    "out": []
+  },
+  {
+    "name": "database",
+    "in": [
+      "INSERT INTO subscriptions (content) VALUES (?)",
+      [
+        "{\"type\":\"b18036ba-0838-437a-8925-7524cf8b07b9\",\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\",\"user_id\":\"241854720\"}"
+      ]
+    ],
+    "out": []
+  }
+]

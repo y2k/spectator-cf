@@ -6,14 +6,14 @@ let is_atom content = Re.execp atom_re content
 
 let get_ids new_subs =
   new_subs
-  |> List.map (fun x ->
+  |> List.map (fun row ->
          let module U = Yojson.Safe.Util in
-         let id = x |> U.member "id" |> U.to_int in
-         let user_id = x |> U.member "user_id" |> U.to_string in
-         let url =
-           x |> U.member "content" |> U.to_string |> Yojson.Safe.from_string
-           |> U.member "url" |> U.to_string
+         let id = row |> U.member "id" |> U.to_int in
+         let content =
+           row |> U.member "content" |> U.to_string |> Yojson.Safe.from_string
          in
+         let url = content |> U.member "url" |> U.to_string in
+         let user_id = content |> U.member "user_id" |> U.to_string in
          (id, user_id, url))
 
 let get_new_subs = Effects.query ("SELECT * FROM new_subscriptions LIMIT 5", [])
@@ -41,17 +41,20 @@ let save_subs new_subs contents =
   @ (rss_list
     |> List.map (fun (_, user_id, url) ->
            let content =
-             `Assoc [ ("type", `String rss_type); ("url", `String url) ]
+             `Assoc
+               [
+                 ("type", `String rss_type);
+                 ("url", `String url);
+                 ("user_id", `String user_id);
+               ]
              |> Yojson.Safe.to_string
            in
            Effects.query
-             ( "INSERT INTO subscriptions (user_id, content) VALUES (?, ?)",
-               [ user_id; content ] )))
+             ("INSERT INTO subscriptions (content) VALUES (?)", [ content ])))
   |> Io.combine
 
 let handle =
   let open Io.Syntax in
   let* new_subs = get_new_subs in
   let* rss_list = get_new_sub_contents new_subs in
-  let* _ = save_subs new_subs rss_list in
-  Io.pure ()
+  save_subs new_subs rss_list |> Io.ignore

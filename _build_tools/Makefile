@@ -13,4 +13,7 @@ hook:
 	source .dev.vars ; \
 	curl "https://api.telegram.org/bot$$TG_TOKEN/setWebhook?max_connections=1&drop_pending_updates=true&url=$$NGROK_URL"
 
-.PHONY: run db test hook
+trigger:
+	curl http://localhost:8787/__scheduled?cron=*+*+*+*+*
+
+.PHONY: run db test hook trigger
