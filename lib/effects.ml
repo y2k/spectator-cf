@@ -47,16 +47,26 @@ module Io = struct
     | [] -> pure []
 end
 
-type query_params = string * string list [@@deriving yojson]
-type query_result = Yojson.Safe.t list [@@deriving yojson]
-type fetch_params = string * Yojson.Safe.t [@@deriving yojson]
-type fetch_result = (string, string) result
+let get_now =
+  let open Io.Syntax in
+  let* w = Io.resolve_world in
+  let+ result =
+    w.perform (`Assoc [ ("name", `String "const"); ("in", `String "get_now") ])
+  in
+  Yojson.Safe.Util.to_string result
 
 let read_const : string Io.t =
   let open Io.Syntax in
   let* w = Io.resolve_world in
-  let+ result = w.perform (`Assoc [ ("name", `String "const") ]) in
+  let+ result =
+    w.perform (`Assoc [ ("name", `String "const"); ("in", `String "message") ])
+  in
   Yojson.Safe.Util.to_string result
+
+type query_params = string * string list [@@deriving yojson]
+type query_result = Yojson.Safe.t list [@@deriving yojson]
+type fetch_params = string * Yojson.Safe.t [@@deriving yojson]
+type fetch_result = (string, string) result
 
 let fetch_result_to_yojson (x : fetch_result) : Yojson.Safe.t =
   (match x with Ok x -> `Ok x | Error e -> `Error e)

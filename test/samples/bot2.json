@@ -1,6 +1,7 @@
 [
     {
         "name": "const",
+        "in": "message",
         "out": "{\"update_id\":569125716,\n\"message\":{\"message_id\":5752,\"from\":{\"id\":241854720,\"is_bot\":false,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"language_code\":\"en\"},\"chat\":{\"id\":241854720,\"first_name\":\"Igor\",\"username\":\"angmarr\",\"type\":\"private\"},\"date\":1704202108,\"text\":\"/add https://github.com/apple/homebrew-apple/commits/main.atom\",\"entities\":[{\"offset\":0,\"length\":4,\"type\":\"bot_command\"},{\"offset\":5,\"length\":57,\"type\":\"url\"}],\"link_preview_options\":{\"is_disabled\":true}}}"
     },
     {

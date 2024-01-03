@@ -106,4 +106,36 @@ module ScheduleTests = struct
   let () = test "bot4.json" Lib.Handler_bot.handle
   let () = test "bot5.json" Lib.Handler_bot.handle
   let () = test "schedule1.json" Lib.Handler_subscription.handle
+  (* let () = test "snapshots1.json" Lib.Handler_snapshots.handle *)
 end
+
+type snapshot = { id : string }
+
+let get_new_snapshot last_id content =
+  let snapshot =
+    Xml.parse_string content
+    |> Xml.map (fun x -> match Xml.tag x with "entry" -> Some x | _ -> None)
+    |> List.filter_map Fun.id
+    |> List.map (fun x ->
+           let get_prop name =
+             Xml.children x
+             |> List.find (fun x -> Xml.tag x = name)
+             |> Xml.children |> List.hd |> Xml.pcdata
+           in
+           { id = get_prop "id" })
+    |> Fun.flip List.nth_opt 0
+  in
+  match snapshot with Some x when Some x.id <> last_id -> Some x | _ -> None
+
+let () =
+  {|{
+    "url": "u",
+    "user_id": "u",
+    "last_id": "1",
+    "updated": 1.0
+  }|}
+  |> Yojson.Safe.from_string |> Lib.Handler_snapshots.subscription_of_yojson
+  |> Result.get_ok |> Lib.Handler_snapshots.subscription_to_yojson
+  |> Yojson.Safe.pretty_to_string
+  |> Lib.Common.Debug.trace "RESULT"
+  |> ignore

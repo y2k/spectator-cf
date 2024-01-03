@@ -1,0 +1,26 @@
+[
+    {
+        "name": "database",
+        "in": [
+            "SELECT * FROM subscriptions LIMIT 5 ORDER BY content->>'updated'",
+            []
+        ],
+        "out": [
+            {
+                "id": 1,
+                "content": "{\"url\":\"https://github.com/apple/homebrew-apple/commits/main.atom\",\"user_id\":\"241854720\"}"
+            }
+        ]
+    },
+    {
+        "name": "fetch",
+        "in": [
+            "https://github.com/apple/homebrew-apple/commits/main.atom",
+            {}
+        ],
+        "out": [
+            "Ok",
+            "md5:ac4694860f4a642899c6f147141d3a89"
+        ]
+    }
+]

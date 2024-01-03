@@ -11,4 +11,4 @@
 (env
  (dev
   (flags
-   (:standard -w -38 -w -26 -w -32))))
+   (:standard -w -38 -w -26 -w -32 -w -69))))
